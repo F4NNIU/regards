@@ -28,6 +28,15 @@ Var RegardsStopExit
     nsExec::Exec '"$INSTDIR\regards.exe" path remove'
     Pop $RegardsStopExit
   ${EndIf}
+  ; "Delete the application data" was ticked: the mail, the settings, the logs
+  ; and the passwords in the credential store go too, before regards.exe does.
+  ; With no daemon running: this is not something a connected program can ask.
+  ${If} $DeleteAppDataCheckboxState = 1
+  ${AndIf} $UpdateMode <> 1
+  ${AndIf} ${FileExists} "$INSTDIR\regards.exe"
+    nsExec::Exec '"$INSTDIR\regards.exe" erase --confirm "erase everything"'
+    Pop $RegardsStopExit
+  ${EndIf}
 !macroend
 
 ; Up to 0.3.0 the installer had no publisher name, and kept its notes (where

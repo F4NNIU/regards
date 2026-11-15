@@ -2023,25 +2023,10 @@ fn unlocked(lock: &std::path::Path) -> bool {
     }
 }
 
-/// Everything in the data directory but the erase marker; whether all went.
+/// Everything in the data directory but the erase marker (and, on Windows,
+/// the programs installed in that same folder); whether all went.
 fn remove_all_but_marker(dirs: &DataDirs) -> bool {
-    let Ok(entries) = std::fs::read_dir(dirs.data()) else {
-        return true;
-    };
-    let mut all = true;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path == dirs.erase_marker() {
-            continue;
-        }
-        let removed = if path.is_dir() {
-            std::fs::remove_dir_all(&path)
-        } else {
-            std::fs::remove_file(&path)
-        };
-        all &= removed.is_ok();
-    }
-    all
+    dirs.remove_kept(&[dirs.erase_marker()]) == 0
 }
 
 /// Quit Regards fully, as the tray's Quit does: the app's own daemon stops
