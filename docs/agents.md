@@ -45,7 +45,8 @@ The easiest way is in Regards: **Connect** beside an agent in the Agents menu, o
 - **Claude app:** add Regards to its settings file, then restart it.
 - **Cursor:** **Add to Cursor** asks Cursor to add Regards as an MCP server; you confirm there.
 - **Codex:** run `codex mcp add regards -- regards mcp`.
-- **Other agents:** the same request as Claude Code, or `regards mcp` as an MCP server.
+- **LM Studio** (a model on your own computer): **Add to LM Studio** asks LM Studio to add Regards as an MCP server; you confirm there. Load a model that can use tools (LM Studio marks them with a hammer): small models often get tool calls wrong.
+- **Other agents:** the same request as Claude Code, or `regards mcp` as an MCP server. Jan and Goose, which also run models on your computer, take it that way (Jan: **Settings › MCP Servers**; Goose: `goose configure`, **Add Extension**). Ollama serves a model but does not connect to MCP servers by itself: use it through such an app.
 
 The tab **On this computer** lists the agents found here; each says **Active** once Regards is set up in it. The dialog checks again every few seconds, so you see it turn active.
 
@@ -73,7 +74,7 @@ Agents use it in either of two ways.
   args = ["mcp"]
   ```
 
-- Cursor, in `~/.cursor/mcp.json`:
+- Cursor, in `~/.cursor/mcp.json`, and LM Studio, in its `mcp.json` (**Program** tab, **Install › Edit mcp.json**):
 
   ```json
   { "mcpServers": { "regards": { "command": "regards", "args": ["mcp"] } } }
@@ -98,7 +99,7 @@ The **Agents** button at the foot of the sidebar opens two tabs:
   - **Copy to the clipboard**, for any other agent.
 
   Nothing is sent until you send it in the agent. Regards itself sends nothing to any AI.
-- **Agents:** the agent apps Regards found on this computer, by their settings folders (`~/.claude`, `~/.codex`, `~/.cursor`, the Claude app's). One is marked **Active** once Regards is set up in it (the skill from `regards skill --install` is in its skills folder, or `regards` is one of its MCP servers) or while it is connected; otherwise it has **Connect**, which opens the Connect dialog on its card (§ 4). Regards only looks: it changes nothing in those folders. When it finds none, it lists them all.
+- **Agents:** the agent apps Regards found on this computer, by their settings folders (`~/.claude`, `~/.codex`, `~/.cursor`, `~/.lmstudio`, the Claude app's). One is marked **Active** once Regards is set up in it (the skill from `regards skill --install` is in its skills folder, or `regards` is one of its MCP servers) or while it is connected; otherwise it has **Connect**, which opens the Connect dialog on its card (§ 4). Regards only looks: it changes nothing in those folders. When it finds none, it lists them all.
 
 You can hide the button from its menu; Settings › Agents shows it again.
 

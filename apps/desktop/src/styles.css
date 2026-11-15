@@ -503,6 +503,17 @@ button:disabled {
   gap: 6px;
 }
 
+/* Beside an agent's name: it runs models on this computer. */
+.connect-tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: var(--pill);
+  color: var(--accent-hover);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .connect-note {
   padding: 10px 12px;
   border: 1px solid rgb(59 125 216 / 0.3);
