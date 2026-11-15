@@ -37,6 +37,7 @@ const READING: &[&str] = &[
     methods::HOLD_GET,
     methods::NOTE_LIST,
     methods::MEMORY_GET,
+    methods::SERVER_STATUS,
 ];
 
 /// A token bucket: `capacity` at most, refilled at `per_second`.

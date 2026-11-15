@@ -15,8 +15,9 @@ Regards makes these connections, and no others:
 | **Microsoft or Google sign-in**, if you add an account that way | When you sign in, and about once an hour after | Signing in, then renewing the sign-in. Your password goes to Microsoft or Google in your browser, never to Regards |
 | **Web servers named in a message**, only if you ask | When you choose *Load images* for a message, or open one from a sender whose images you chose to always load | Showing that message's remote images. They can tell the sender you opened it, which is why they stay blocked until you ask. No referrer is sent |
 | **Web pages you open from a message** | When you click a link | Links open in your own browser. Their tracking parameters (such as `utm_…` or `fbclid`) are removed first, unless you turn that off |
-| **The AI provider you choose**, only if you turn the assistant on: Anthropic (`api.anthropic.com`) with your own key, or any OpenAI-compatible server you name, including one on your computer | Only when you ask it to summarise a conversation or draft a reply | Sending that conversation to the model, and getting its answer back. At most its latest 8 messages and 40,000 characters go, without the parts they quote. Messages that look like they carry a sign-in or verification code never go. Before anything goes, Regards shows you how many messages, how many characters, and where to. Your key goes only to the server you gave it for. What the provider does with the conversation is governed by your agreement with them |
+| **The AI provider you choose**, only if you turn the assistant on: Anthropic (`api.anthropic.com`) with your own key, or any OpenAI-compatible server you name, including one on your computer | Only when you ask it to summarise a conversation or draft a reply | Sending that conversation to the model, and getting its answer back. At most its latest 8 messages and 40,000 characters go, without the parts they quote. Messages that look like they carry a sign-in or verification code never go. Before anything goes, Regards shows you how many messages, how many characters, and where to. Your key goes only to the server you gave it for. If you choose **Model on this computer**, Regards asks this computer's own ports (11434, 1234 and 8080) which model server answers and which models it has; that never leaves the computer. When you save, the model is asked for one word, with no mail in it, to show that it answers. What the provider does with the conversation is governed by your agreement with them |
 | **GitHub** (`api.github.com`), only if you allow it | Once a day if you turn on update checks, or when you check by hand | Asking for the latest version of Regards. GitHub sees your computer's internet address and that the request comes from Regards; nothing else is sent |
+| **GitHub** (`github.com` and its download servers), only when you ask | When you choose *Install and restart* for a later version | Downloading that version's installer. Regards installs it only if it carries the project's signature. GitHub sees your computer's internet address, which system the installer is for, and that the request comes from Regards; nothing else is sent |
 
 Every connection to a mail server, a sign-in service or a hosted AI provider uses TLS, and the certificate is always checked. There is no setting to turn that off.
 
@@ -38,6 +39,10 @@ Every connection to a mail server, a sign-in service or a hosted AI provider use
   - **Export diagnostics** writes the log, with versions and how many accounts of each kind, to a file you choose. Nothing is sent; you decide whether to share the file.
 
 Regards relies on your operating system's disk encryption to protect these files. To remove everything, choose **Support › Remove everything from this computer**. Regards removes your passwords, sign-ins and keys from the credential store, then your mail, drafts, Outbox, settings and logs, and stops starting at login. Then it quits, and its next start is a first run. Mail on your servers is not touched.
+
+**Uninstalling:**
+- **Windows:** the uninstaller keeps all of this unless you tick *Delete the application data*; then it removes the same things.
+- **macOS and Linux:** removing the app keeps it. Choose *Remove everything from this computer* first.
 
 ## What your sent mail reveals
 

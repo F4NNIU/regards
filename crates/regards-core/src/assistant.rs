@@ -49,6 +49,56 @@ impl Kind {
     }
 }
 
+/// An app that serves models on this computer, with OpenAI's API, at a
+/// port of its own: where Regards looks when the person asks for a model
+/// on this computer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LocalApp {
+    Ollama,
+    LmStudio,
+    LlamaCpp,
+}
+
+impl LocalApp {
+    pub const ALL: [Self; 3] = [Self::Ollama, Self::LmStudio, Self::LlamaCpp];
+
+    /// The port it listens on unless told otherwise.
+    pub fn port(self) -> u16 {
+        match self {
+            Self::Ollama => 11434,
+            Self::LmStudio => 1234,
+            Self::LlamaCpp => 8080,
+        }
+    }
+}
+
+/// Models listed at most, and the longest name kept.
+const MAX_MODELS: usize = 200;
+const MAX_MODEL_NAME: usize = 200;
+
+/// The models an OpenAI-compatible server lists (`GET …/v1/models`), in its
+/// order; `None` when the answer is not such a list, so something else
+/// listening on the port is not taken for a model server.
+pub fn read_models(status: u16, body: &[u8]) -> Option<Vec<String>> {
+    if !(200..=299).contains(&status) {
+        return None;
+    }
+    let answer: Value = serde_json::from_slice(body).ok()?;
+    let listed = answer.get("data")?.as_array()?;
+    let mut models: Vec<String> = Vec::new();
+    for entry in listed {
+        let name = entry.get("id")?.as_str()?.trim();
+        if name.is_empty() || name.len() > MAX_MODEL_NAME || name.chars().any(char::is_control) {
+            continue;
+        }
+        if models.len() < MAX_MODELS && !models.iter().any(|known| known == name) {
+            models.push(name.to_owned());
+        }
+    }
+    Some(models)
+}
+
 /// What the person asks for.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -248,6 +298,48 @@ pub fn openai_body(model: &str, task: &Task, system: &str, user: &str) -> String
     .to_string()
 }
 
+/// A request that only shows the server, the model and the key work: no
+/// mail in it, and a few words back at most.
+const CHECK_ASK: &str = "Answer with the one word: ready";
+
+/// The check, for the Messages API. Thinking counts in its tokens.
+pub fn anthropic_check_body(model: &str) -> String {
+    json!({
+        "model": model,
+        "max_tokens": 1_000,
+        "output_config": { "effort": "low" },
+        "messages": [{ "role": "user", "content": CHECK_ASK }],
+    })
+    .to_string()
+}
+
+/// The check, for chat completions.
+pub fn openai_check_body(model: &str) -> String {
+    json!({
+        "model": model,
+        "max_tokens": 16,
+        "messages": [{ "role": "user", "content": CHECK_ASK }],
+    })
+    .to_string()
+}
+
+/// Whether a check was answered: by the model, whatever it wrote (a model
+/// that thinks first may have no words left).
+pub fn read_check(kind: Kind, status: u16, body: &[u8]) -> Result<(), AnswerError> {
+    if status == 404 {
+        return Err(AnswerError::NotFound);
+    }
+    let answer: Value = serde_json::from_slice(body).map_err(|_| AnswerError::Unreadable)?;
+    if let Some(error) = by_status(status, &answer) {
+        return Err(error);
+    }
+    let answered = match kind {
+        Kind::Anthropic => answer["content"].is_array(),
+        Kind::OpenaiCompatible => answer.pointer("/choices/0").is_some(),
+    };
+    if answered { Ok(()) } else { Err(AnswerError::Unreadable) }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum AnswerError {
     #[error("the key was refused; check it in Settings")]
@@ -260,6 +352,10 @@ pub enum AnswerError {
     Provider(String),
     #[error("the provider gave an answer Regards cannot read")]
     Unreadable,
+    /// Only from [`read_check`]: the server answered, without this model or
+    /// at another address.
+    #[error("the server does not know this model, or its address is not the one given")]
+    NotFound,
 }
 
 fn by_status(status: u16, body: &Value) -> Option<AnswerError> {
@@ -321,6 +417,48 @@ pub fn read_openai(status: u16, body: &[u8]) -> Result<String, AnswerError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_model_server_is_known_by_the_list_of_models_it_gives() {
+        let ollama =
+            br#"{"object":"list","data":[{"id":"llama3.1:8b","object":"model"},{"id":" qwen3 "},{"id":"llama3.1:8b"},{"id":""}]}"#;
+        assert_eq!(read_models(200, ollama).unwrap(), ["llama3.1:8b", "qwen3"]);
+        assert_eq!(read_models(200, br#"{"data":[]}"#).unwrap(), Vec::<String>::new());
+        // Something else on the port: a web page, another API, an error.
+        assert_eq!(read_models(200, b"<html>"), None);
+        assert_eq!(read_models(200, br#"{"data":[{"name":"x"}]}"#), None);
+        assert_eq!(read_models(200, br#"{"models":[]}"#), None);
+        assert_eq!(read_models(404, br#"{"data":[]}"#), None);
+        assert_eq!(LocalApp::ALL.map(LocalApp::port), [11434, 1234, 8080]);
+    }
+
+    #[test]
+    fn a_check_carries_no_mail_and_says_what_went_wrong() {
+        let body: Value = serde_json::from_str(&openai_check_body("llama3.1")).unwrap();
+        assert_eq!(body["model"], "llama3.1");
+        assert_eq!(body["messages"].as_array().unwrap().len(), 1);
+        let open = Kind::OpenaiCompatible;
+        assert_eq!(
+            read_check(open, 200, br#"{"choices":[{"message":{"content":""}}]}"#),
+            Ok(())
+        );
+        assert_eq!(
+            read_check(open, 200, br#"{"choices":[]}"#),
+            Err(AnswerError::Unreadable)
+        );
+        assert_eq!(
+            read_check(open, 404, br#"{"error":{"message":"model 'x' not found"}}"#),
+            Err(AnswerError::NotFound)
+        );
+        assert_eq!(read_check(open, 404, b"404 page not found"), Err(AnswerError::NotFound));
+        assert_eq!(read_check(open, 401, b"{}"), Err(AnswerError::Key));
+        assert_eq!(read_check(open, 503, b"{}"), Err(AnswerError::Busy));
+        assert_eq!(read_check(Kind::Anthropic, 200, br#"{"content":[]}"#), Ok(()));
+        assert_eq!(
+            read_check(Kind::Anthropic, 200, br#"{"choices":[{}]}"#),
+            Err(AnswerError::Unreadable)
+        );
+    }
 
     fn message(from: &str, text: &str) -> Message {
         Message {

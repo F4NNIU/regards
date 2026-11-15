@@ -46,6 +46,7 @@ mod templates;
 mod unsubscribe;
 mod voice;
 
+pub use erase::without_daemon as erase_without_daemon;
 pub use oauth::OauthApp;
 use regards_core::paths::DataDirs;
 use regards_imap::TlsOptions;
@@ -74,6 +75,28 @@ pub enum DaemonError {
     Listen { endpoint: String, source: io::Error },
     #[error("could not open the mail database: {0}")]
     Store(#[from] StoreError),
+    #[error("the system credential store kept a password, so nothing was removed: {0}")]
+    Credentials(String),
+}
+
+/// The data directory's lock, which one daemon holds at a time.
+pub(crate) fn take_lock(dirs: &DataDirs) -> Result<File, DaemonError> {
+    let data_error = |source| DaemonError::DataDir {
+        path: dirs.data().to_path_buf(),
+        source,
+    };
+    let lock = File::options()
+        .create(true)
+        .read(true)
+        .write(true)
+        .truncate(false)
+        .open(dirs.lock_file())
+        .map_err(data_error)?;
+    match lock.try_lock() {
+        Ok(()) => Ok(lock),
+        Err(TryLockError::WouldBlock) => Err(DaemonError::AlreadyRunning(dirs.data().to_path_buf())),
+        Err(TryLockError::Error(source)) => Err(data_error(source)),
+    }
 }
 
 /// Shared state of a running daemon.
@@ -178,18 +201,7 @@ impl Daemon {
         std::fs::create_dir_all(dirs.data()).map_err(data_error)?;
         restrict_to_owner(dirs.data()).map_err(data_error)?;
 
-        let lock = File::options()
-            .create(true)
-            .read(true)
-            .write(true)
-            .truncate(false)
-            .open(dirs.lock_file())
-            .map_err(data_error)?;
-        match lock.try_lock() {
-            Ok(()) => {}
-            Err(TryLockError::WouldBlock) => return Err(DaemonError::AlreadyRunning(dirs.data().to_path_buf())),
-            Err(TryLockError::Error(source)) => return Err(data_error(source)),
-        }
+        let lock = take_lock(&dirs)?;
 
         // Asked to remove everything last time: done before anything is opened.
         erase::finish(&dirs);

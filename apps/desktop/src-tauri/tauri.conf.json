@@ -30,6 +30,12 @@
     "active": true,
     "targets": "all",
     "license": "Apache-2.0 OR MIT",
+    "publisher": "The Regards contributors",
+    "copyright": "Copyright © 2026 The Regards contributors",
+    "homepage": "https://regards-two.vercel.app",
+    "category": "Productivity",
+    "shortDescription": "Local-first, open-source email",
+    "longDescription": "Regards is a free, open-source email client. Your mail stays on your computer: a calm, sectioned inbox, snooze, reminders, send later, undo everywhere, and a safe interface for AI agents.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -37,13 +43,27 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "windows": {
       "nsis": {
+        "languages": [
+          "English",
+          "French"
+        ],
+        "displayLanguageSelector": false,
         "installerHooks": "./windows/hooks.nsh"
       }
     }
   },
   "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAyMzVGREZBOTVBQjAzNTMKUldSVEE2dVYrdjAxQWd6YzlsMkVuR2NabHZHUkRkdnRmbEwvN1IxTWQzWmRPZ21ObjZXY3U3blkK",
+      "endpoints": [
+        "https://github.com/lucienPochon/regards/releases/latest/download/latest.json"
+      ]
+    },
     "deep-link": {
       "desktop": {
         "schemes": [

@@ -387,7 +387,11 @@ function sampleHolds(): Hold[] {
   });
   const email = owner.account.email;
   return [
-    hold(2, 1, "sending", "draft.send", "Send “Re: Garden plot schedule” to Lena Okafor", heldDraft),
+    {
+      ...hold(2, 1, "sending", "draft.send", "Send “Re: Garden plot schedule” to Lena Okafor", heldDraft),
+      // The agent asked for the same message a few minutes before, and it was approved.
+      repeats: { asked_at: started - 6 * 60_000, hold_id: 0, status: "approved" },
+    },
     {
       ...hold(3, 4, "voice", "voice.suggest", `Change your voice for ${email}`, null),
       params: {
@@ -459,6 +463,9 @@ function agentActivity(): AgentActivity[] {
     before,
     undo_id: undo,
     undoable: undo !== null && !agentUndone.has(undo),
+    // What an agent did can be undone for a day.
+    undo_until: undo !== null && !agentUndone.has(undo) ? at(minutesAgo) + 24 * 60 * 60_000 : null,
+    undo_state: undo === null ? null : agentUndone.has(undo) ? "used" : "open",
   });
   // A script on the command line ran while the assistant was connected: their requests interleave.
   return [
@@ -1015,6 +1022,7 @@ function handle(cmd: string, args: Args): unknown {
     case "open_url":
     case "open_in_agent":
     case "add_to_cursor":
+    case "add_to_lm_studio":
       return null;
     case "account_set_auto_copy": {
       const owner = accounts.find((a) => a.account.id === args.accountId);
@@ -1119,6 +1127,19 @@ function handle(cmd: string, args: Args): unknown {
       assistant = { kind: choice.kind, base_url, model, has_key };
       return assistant;
     }
+    case "assistant_local_servers":
+      // `?local=none`: no model server runs on this computer.
+      return params.get("local") === "none"
+        ? []
+        : [{ app: "ollama", base_url: "http://localhost:11434/v1", models: ["llama3.1:8b", "qwen3:14b", "mistral-small"] }];
+    case "assistant_check":
+      if (!assistant.kind) throw new Error("the assistant is off; choose a provider in Settings to use it");
+      return {
+        destination: (assistant.base_url ?? "").replace(/^https?:\/\//, "").split("/")[0],
+        model: assistant.model,
+        problem: null,
+        detail: null,
+      };
     case "assistant_preview":
     case "assistant_run": {
       if (!assistant.kind) throw new Error("the assistant is off; choose a provider in Settings to use it");
@@ -1189,7 +1210,7 @@ function handle(cmd: string, args: Args): unknown {
       notificationChoices = args.settings as typeof notificationChoices;
       return null;
     case "update_status":
-      return { checks: updateChecks, current: "0.1.0", available: updateFound, checked_at: updateCheckedAt };
+      return { checks: updateChecks, current: "0.1.0", available: updateFound, checked_at: updateCheckedAt, can_install: params.get("install") !== "no" };
     case "update_set_checks":
       updateChecks = Boolean(args.on);
       return null;
@@ -1203,6 +1224,9 @@ function handle(cmd: string, args: Args): unknown {
       return updateFound;
     case "update_open":
       return null;
+    case "update_install":
+      // The real one ends the app. Here it fails, so the download is offered (`?install=no`: never offered).
+      throw "could not install the update: this is the preview";
     case "account_oauth_providers":
       return { providers: ["microsoft", "google"] };
     case "account_oauth_start":
@@ -1670,7 +1694,7 @@ function handle(cmd: string, args: Args): unknown {
         if (agentUndone.has(args.id as number)) throw new Error("It is too late to undo that.");
         agentUndone.add(args.id as number);
         changed();
-        return { undone: args.id === 9001 ? 2 : 1 };
+        return { undone: args.id === 9001 ? 2 : 1, skipped: 0 };
       }
       const undo = undos.get(args.id as number);
       if (!undo) throw new Error("It is too late to undo that.");

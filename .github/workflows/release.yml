@@ -3,7 +3,9 @@ name: Release
 # Builds the installers for a version tag (v0.1.0 …) on Windows, macOS and
 # Linux, each with the `regards` program inside (apps/desktop/scripts/sidecar.mjs),
 # and puts them on a draft GitHub release. Nothing is published: the owner
-# reads the draft and publishes it.
+# reads the draft and publishes it. Each file comes with an update signature,
+# and the release with `latest.json`: what installed copies update from
+# (docs/releasing.md, "Updates").
 #
 # Not signed yet: Windows signing (SignPath Foundation, docs/code-signing.md)
 # comes once the project is accepted; macOS notarisation needs the Apple
@@ -66,15 +68,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Named versions, not -latest: what builds a release changes when we
+        # change it here, like the actions. Bump them like any dependency.
         include:
           - name: Windows x64
-            os: windows-latest
+            os: windows-2025
             target: x86_64-pc-windows-msvc
           - name: macOS Apple silicon
-            os: macos-latest
+            os: macos-26
             target: aarch64-apple-darwin
           - name: macOS Intel
-            os: macos-latest
+            os: macos-26
             target: x86_64-apple-darwin
           # The oldest supported Ubuntu, so the packages run on more systems.
           - name: Linux x64
@@ -84,6 +88,9 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+      # For the attestation: the workflow proves who it is, and stores it.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -122,11 +129,45 @@ jobs:
           REGARDS_MICROSOFT_CLIENT_ID: ${{ secrets.REGARDS_MICROSOFT_CLIENT_ID }}
           REGARDS_GOOGLE_CLIENT_ID: ${{ secrets.REGARDS_GOOGLE_CLIENT_ID }}
           REGARDS_GOOGLE_CLIENT_SECRET: ${{ secrets.REGARDS_GOOGLE_CLIENT_SECRET }}
+          # The key that signs the update files (docs/releasing.md, "Updates").
+          # An installed Regards only installs what this key signed.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           for name in REGARDS_MICROSOFT_CLIENT_ID REGARDS_GOOGLE_CLIENT_ID; do
             [ -n "${!name}" ] || echo "::warning::$name is not set: this build has no sign-in for that provider"
           done
-          npm run release -- --target ${{ matrix.target }}
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::TAURI_SIGNING_PRIVATE_KEY is not set: installed copies could not update to this release (docs/releasing.md)"
+            exit 1
+          fi
+          npm run release -- --config src-tauri/tauri.updater.json --target ${{ matrix.target }}
+      - name: Name the packed macOS app after its DMG
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          bundle="target/${{ matrix.target }}/release/bundle"
+          shopt -s nullglob
+          # What an installed Mac copy updates from: the app, packed. Both Macs'
+          # are called Regards.app.tar.gz, so each takes its DMG's name.
+          for dmg in "$bundle"/dmg/*.dmg; do
+            packed="$bundle/macos/$(basename "$dmg" .dmg).app.tar.gz"
+            mv "$bundle"/macos/*.app.tar.gz "$packed"
+            mv "$bundle"/macos/*.app.tar.gz.sig "$packed.sig"
+          done
+      # A signed statement, kept by GitHub, that each file was built by this
+      # workflow from this tag. Anyone can check a download against it:
+      # gh attestation verify <file> --repo <this repository> (docs/releasing.md).
+      - name: Attest where the files were built
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            target/${{ matrix.target }}/release/bundle/nsis/*.exe
+            target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+            target/${{ matrix.target }}/release/bundle/deb/*.deb
+            target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+            target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
       - name: Upload to the draft
         shell: bash
         env:
@@ -134,10 +175,41 @@ jobs:
         run: |
           bundle="target/${{ matrix.target }}/release/bundle"
           shopt -s nullglob
+          # With each update file, its signature (.sig), for the update manifest.
           files=("$bundle"/nsis/*.exe "$bundle"/msi/*.msi "$bundle"/dmg/*.dmg \
-                 "$bundle"/deb/*.deb "$bundle"/rpm/*.rpm "$bundle"/appimage/*.AppImage)
+                 "$bundle"/deb/*.deb "$bundle"/rpm/*.rpm "$bundle"/appimage/*.AppImage \
+                 "$bundle"/macos/*.app.tar.gz "$bundle"/*/*.sig)
           if [ ${#files[@]} -eq 0 ]; then
             echo "::error::no bundles in $bundle"
             exit 1
           fi
           gh release upload "$TAG" "${files[@]}" --clobber
+
+  # What an installed Regards reads to update itself: the version, and each
+  # system's file and signature (apps/desktop/scripts/update-manifest.mjs).
+  # It is only served once the release is published and is the latest.
+  manifest:
+    name: Update manifest
+    needs: bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          # Nothing here pushes with git: do not leave the token in its config.
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Write latest.json from the signatures, and upload it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$TAG" --pattern '*.sig' --dir signatures
+          node apps/desktop/scripts/update-manifest.mjs signatures "$TAG" \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG" > latest.json
+          cat latest.json
+          gh release upload "$TAG" latest.json --clobber

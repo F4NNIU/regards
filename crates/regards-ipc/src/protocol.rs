@@ -2,7 +2,7 @@
 
 use crate::token::UiToken;
 pub use regards_core::agents::Access as AgentAccess;
-pub use regards_core::assistant::{Kind as AssistantKind, Task as AssistantTask};
+pub use regards_core::assistant::{Kind as AssistantKind, LocalApp as LocalModelApp, Task as AssistantTask};
 use regards_core::body::Attachment;
 pub use regards_core::compose::{AutoCopy, CopyKind, SendCheck};
 pub use regards_core::executor::Executor;
@@ -129,11 +129,12 @@ pub mod methods {
     /// read) covers. `ui` only, as `thread.get`.
     pub const MESSAGE_CONVERSATION_IDS: &str = "message.conversation_ids";
     /// Each message's Gmail labels: the label folders holding a copy of it,
-    /// and labels added here not synced back yet. `ui` only for now.
+    /// and labels added here not synced back yet. Agents need `read`.
     pub const MESSAGE_LABELS: &str = "message.labels";
     /// Add and remove Gmail labels: a label added is a copy in its folder, one
     /// removed is that copy deleted. Applied at once, sent by the operation
-    /// queue. `ui` only.
+    /// queue, and undoable. Agents need `triage`, and only on a Gmail account:
+    /// elsewhere the copy in a folder may be the only one.
     pub const MESSAGE_SET_LABELS: &str = "message.set_labels";
     /// Mark messages read or unread, flagged or not. Applied at once, sent to the
     /// server by the operation queue (ADR-0010). `ui` only for now.
@@ -266,6 +267,10 @@ pub mod methods {
     /// What helps write to someone: the person's voice, and what the account
     /// knows of the other person ([`MemoryResult`](super::MemoryResult)). Agents: Read.
     pub const MEMORY_GET: &str = "memory.get";
+    /// What the server has not been told yet of the changes made here, and
+    /// what it refused lately ([`ServerStatusResult`](super::ServerStatusResult)):
+    /// a change is made on this device at once, then sent. Agents: Read.
+    pub const SERVER_STATUS: &str = "server.status";
     /// Drafts in the server's Drafts folders written elsewhere (another
     /// device, webmail), to pick up. `ui` only.
     pub const DRAFT_ELSEWHERE: &str = "draft.elsewhere";
@@ -347,6 +352,14 @@ pub mod methods {
     pub const ASSISTANT_PREVIEW: &str = "assistant.preview";
     /// Do a task: a conversation's summary, or a reply drafted (never sent).
     pub const ASSISTANT_RUN: &str = "assistant.run";
+    /// The model servers answering on this computer (Ollama, LM Studio,
+    /// llama.cpp, at their usual ports) and the models each lists:
+    /// [`AssistantLocalServers`]. Only this computer is asked. `ui` only,
+    /// like the one below.
+    pub const ASSISTANT_LOCAL_SERVERS: &str = "assistant.local_servers";
+    /// Ask the chosen model for one word, with no mail, to show the server,
+    /// the model and the key work: [`AssistantCheck`].
+    pub const ASSISTANT_CHECK: &str = "assistant.check";
     /// New mail not told of yet (plan §5.12): what came into an inbox since
     /// sync last looked, still unread, oldest first. `ui` only.
     pub const MAIL_ARRIVED: &str = "mail.arrived";
@@ -898,6 +911,21 @@ pub struct HoldView {
     /// it could not run.
     pub result: Option<Value>,
     pub error: Option<String>,
+    /// For a send: the same message (recipients, subject, text) was already
+    /// asked to be sent in this account within the last day.
+    #[serde(default)]
+    pub repeats: Option<HoldRepeat>,
+}
+
+/// The earlier request to send the same message, in [`HoldView::repeats`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HoldRepeat {
+    /// When it was asked (Unix ms).
+    pub asked_at: i64,
+    /// The hold it waited as, and what became of it; `None` when it went
+    /// by itself after the account's undo window.
+    pub hold_id: Option<i64>,
+    pub status: Option<HoldStatus>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -974,11 +1002,29 @@ pub struct AgentActivity {
     #[serde(default)]
     pub before: Option<Value>,
     /// What reverses that change ([`methods::UNDO_APPLY`]), and whether it
-    /// still can (undo lasts ten minutes, and once).
+    /// still can (what an agent did can be undone for a day, and once).
     #[serde(default)]
     pub undo_id: Option<i64>,
     #[serde(default)]
     pub undoable: bool,
+    /// Until when it can be undone (ms since the epoch), while it can.
+    #[serde(default)]
+    pub undo_until: Option<i64>,
+    /// What became of that undo; `None` when the change had none.
+    #[serde(default)]
+    pub undo_state: Option<UndoState>,
+}
+
+/// What became of the undo of an agent's change.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UndoState {
+    /// It can still be undone (`undoable`).
+    Open,
+    /// The person undid it.
+    Used,
+    /// It was not undone in time.
+    Expired,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -1449,6 +1495,9 @@ pub struct SetLabelsResult {
     /// Copies deleted with a label removed: gone from the label's folder,
     /// including any of `ids` that was that copy.
     pub gone: Vec<i64>,
+    /// Set when a label was added or removed.
+    #[serde(default)]
+    pub undo: Option<UndoInfo>,
 }
 
 /// The result of [`methods::MESSAGE_CONVERSATION_IDS`].
@@ -1504,8 +1553,13 @@ pub struct UndoParams {
 /// Result of [`methods::UNDO_APPLY`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UndoResult {
-    /// Messages put back.
+    /// What was put back: messages moved, marks, flags, labels, notes, drafts.
     pub undone: usize,
+    /// What could not be put back: a message gone from the server, a label
+    /// deleted since, or a flag or label changed again since (that is the
+    /// person's, and stays).
+    #[serde(default)]
+    pub skipped: usize,
 }
 
 /// Parameters of [`methods::MESSAGE_PIN`].
@@ -2113,6 +2167,68 @@ pub struct NotesForgotten {
     pub forgotten: u32,
 }
 
+/// Parameters of [`methods::SERVER_STATUS`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ServerStatusParams {
+    /// The account to ask about; otherwise every account (for an agent,
+    /// every account open to it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub account_id: Option<String>,
+}
+
+/// A change to messages, as the server is told of it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ServerChange {
+    /// To another folder: archive, trash, move.
+    Move,
+    /// A Gmail label added.
+    Label,
+    /// Deleted for good, or a Gmail label removed.
+    Delete,
+    /// Read, unread, flagged or not.
+    Flags,
+}
+
+/// A change made here that the server has not been told yet.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WaitingChange {
+    pub account_id: String,
+    pub change: ServerChange,
+    /// The messages it changes.
+    pub message_ids: Vec<i64>,
+    /// How many times it was tried.
+    pub attempts: u32,
+    /// Why the last try failed (the connection, most often); it is tried again.
+    pub error: Option<String>,
+    /// When it is tried next (ms since the epoch).
+    pub retry_at: i64,
+}
+
+/// A change the server refused: it was dropped, and the messages show here
+/// as they are on the server again.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RefusedChange {
+    pub account_id: String,
+    pub change: ServerChange,
+    /// The messages it would have changed.
+    pub message_ids: Vec<i64>,
+    /// What the server said.
+    pub reason: String,
+    /// When (ms since the epoch).
+    pub refused_at: i64,
+}
+
+/// The result of [`methods::SERVER_STATUS`]. Both empty: the server has
+/// every change made here.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ServerStatusResult {
+    /// Oldest first.
+    pub waiting: Vec<WaitingChange>,
+    /// Newest first; those since the service last started, the last 200 at most.
+    pub refused: Vec<RefusedChange>,
+}
+
 /// Parameters of [`methods::MEMORY_GET`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MemoryParams {
@@ -2642,6 +2758,52 @@ pub struct AssistantResult {
     /// For a reply: the draft it was written into, above the signature and
     /// the quoted message, to review and send (or not).
     pub draft: Option<DraftView>,
+}
+
+/// A model server found on this computer.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LocalModelServer {
+    /// The app whose usual port it answers on.
+    pub app: LocalModelApp,
+    /// Its base, as [`AssistantSetSettingsParams::base_url`] takes it:
+    /// `http://localhost:11434/v1`.
+    pub base_url: String,
+    /// The models it lists, in its order; none when it has none yet.
+    pub models: Vec<String>,
+}
+
+/// The result of [`methods::ASSISTANT_LOCAL_SERVERS`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssistantLocalServers {
+    pub servers: Vec<LocalModelServer>,
+}
+
+/// Why a check of the assistant failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AssistantProblem {
+    /// Nothing answered at the address: the server is not running, or is elsewhere.
+    Unreachable,
+    /// The key was refused, or one is needed.
+    Key,
+    /// The server answered, without this model or at another address.
+    NotFound,
+    /// The server is busy or over its limits.
+    Busy,
+    /// Anything else: `detail` says what.
+    Other,
+}
+
+/// The result of [`methods::ASSISTANT_CHECK`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssistantCheck {
+    /// The host that was asked.
+    pub destination: String,
+    pub model: String,
+    /// `None`: the model answered.
+    pub problem: Option<AssistantProblem>,
+    /// What went wrong, in words (English), to show beside the problem.
+    pub detail: Option<String>,
 }
 
 /// Parameters of [`methods::PREFETCH_SET`], and the result of both.

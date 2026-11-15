@@ -503,6 +503,17 @@ button:disabled {
   gap: 6px;
 }
 
+/* Beside an agent's name: it runs models on this computer. */
+.connect-tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: var(--pill);
+  color: var(--accent-hover);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .connect-note {
   padding: 10px 12px;
   border: 1px solid rgb(59 125 216 / 0.3);
@@ -602,8 +613,98 @@ button:disabled {
 
 .assistant-save {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+.assistant-fields .settings-select {
+  width: 100%;
+  max-width: none;
+  height: 36px;
+  border-radius: 9px;
+  font-size: 13.5px;
+}
+
+/* A model server found on this computer, or none. */
+.assistant-found,
+.assistant-missing {
+  display: flex;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--pill-strong);
+  border-radius: 9px;
+  background: var(--pill);
+  font-size: 13.5px;
+}
+
+.assistant-found {
+  align-items: center;
+}
+
+.assistant-found > .icon {
+  color: var(--ok);
+}
+
+.assistant-found > span {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+}
+
+.assistant-missing {
+  align-items: flex-start;
+  border-color: var(--warm-line);
+  background: var(--warm-soft);
+}
+
+.assistant-missing > .icon {
+  margin-top: 1px;
+  color: var(--warm-text);
+}
+
+.assistant-missing > div {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.assistant-missing strong {
+  font-size: 13.5px;
+}
+
+.assistant-missing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.settings-pane .assistant-missing-actions .btn {
+  margin-top: 0;
+}
+
+.assistant-key-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 5px;
+  margin-left: -8px;
+  color: var(--muted);
+}
+
+.assistant-result {
+  flex: 1;
+  min-width: 200px;
+}
+
+.assistant-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-hover);
+  font-weight: 500;
 }
 
 /* "See the original message". */
@@ -6631,6 +6732,27 @@ button.sender-row:hover:not(:disabled) {
   font-size: 12.5px;
 }
 
+/* The same message was asked before: said first, and not to be missed. */
+.hold-repeat {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0 26px;
+  padding: 8px 10px;
+  border: 1px solid var(--warm-line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.hold-repeat > .icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--warm);
+}
+
 /* What an agent wrote for a voice or a note, in full, as it would be kept. */
 .hold-said {
   margin: 10px 0 0 26px;
@@ -6766,6 +6888,19 @@ button.sender-row:hover:not(:disabled) {
 
 .activity-undo:hover:not(:disabled) {
   border-color: var(--accent);
+}
+
+/* How long it can still be undone, beside the button; then that it no longer can. */
+.activity-left {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.activity-left.soon {
+  color: var(--warm-text);
 }
 
 .activity-problem {
