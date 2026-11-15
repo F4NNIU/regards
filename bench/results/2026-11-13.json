@@ -6,7 +6,7 @@
     "Windows": "10.0.26320",
     "Runs": 10,
     "Passive": false,
-    "Notes": "Regards is 0.3.0 with the fix of pull request 300, built locally. Thunderbird is not the latest release. Run from another signed-in session, not on a quiet computer."
+    "Notes": "Regards is 0.3.0 with the fix of pull request 300, built locally. Thunderbird is not the latest release. Run from another signed-in session, not on a quiet computer. Correction, 15 November: the Thunderbird row here is the 153.7.0 install, which had no account (the account was in Thunderbird Beta); see 2026-11-15-thunderbird.json for the install with the account."
   },
   "Results": [
     {

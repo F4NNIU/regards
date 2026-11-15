@@ -365,6 +365,14 @@ $catalog = [ordered]@{
         Install = { Get-FolderMB 'C:\Program Files\Mozilla Thunderbird' }
         Data = { Get-FolderMB (Join-Path $roaming 'Thunderbird'), (Join-Path $local 'Thunderbird') }
     }
+    # The beta is a separate install with its own profile: an account added in
+    # one is not in the other, so measure the one that has the account.
+    ThunderbirdBeta = @{
+        Exe = 'C:\Program Files\Mozilla Thunderbird Beta\thunderbird.exe'; Args = ''
+        Roots = @('thunderbird'); Folder = 'C:\Program Files\Mozilla Thunderbird Beta\'
+        Install = { Get-FolderMB 'C:\Program Files\Mozilla Thunderbird Beta' }
+        Data = { Get-FolderMB (Join-Path $roaming 'Thunderbird'), (Join-Path $local 'Thunderbird') }
+    }
     Outlook     = @{
         Exe = 'explorer.exe'; Args = 'shell:AppsFolder\Microsoft.OutlookForWindows_8wekyb3d8bbwe!Microsoft.OutlookforWindows'
         Roots = @('olk'); Folder = ''

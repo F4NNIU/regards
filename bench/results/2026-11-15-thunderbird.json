@@ -1,0 +1,65 @@
+{
+  "Machine": {
+    "Date": "2026-11-15 17:29",
+    "Cpu": "AMD Ryzen 7 5800X 8-Core Processor",
+    "RamGB": 32,
+    "Windows": "10.0.26320",
+    "Runs": 10,
+    "Passive": false,
+    "Notes": "Thunderbird Beta 161.0, the install that has the benchmark account. Replaces the Thunderbird row of 2026-11-13.json. Run from another signed-in session, not on a quiet computer."
+  },
+  "Results": [
+    {
+      "App": "ThunderbirdBeta",
+      "Version": "161.0",
+      "InstallMB": 361,
+      "DataMB": 336.8,
+      "WindowMs": [
+        1047,
+        822,
+        848,
+        1097,
+        877,
+        908,
+        788,
+        1204,
+        874,
+        842
+      ],
+      "DrawnMs": [
+        1566,
+        1649,
+        2079,
+        1695,
+        2032,
+        2238,
+        1853,
+        2293,
+        1938,
+        1709
+      ],
+      "QuietMs": [
+        2579,
+        3584,
+        2454,
+        2581,
+        2799
+      ],
+      "StartCpuS": [
+        3.81,
+        3.97,
+        3.91,
+        3.48,
+        3.52
+      ],
+      "Processes": 7,
+      "PrivateWorkingSetMB": 314,
+      "CommitMB": 528,
+      "IdleCpuPercent": 1.77,
+      "WindowMsMedian": 875.5,
+      "DrawnMsMedian": 1895.5,
+      "QuietMsMedian": 2581,
+      "StartCpuSMedian": 3.81
+    }
+  ]
+}
