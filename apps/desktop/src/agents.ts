@@ -180,10 +180,12 @@ export interface AgentActivity {
   before: unknown;
   /**
    * What reverses that change, for `applyUndo` (accounts.ts), while
-   * `undoable`: undo lasts ten minutes, and works once.
+   * `undoable`: what an agent did can be undone for a day, and once.
    */
   undo_id: number | null;
   undoable: boolean;
+  /** Until when it can be undone (ms since the epoch), while it can. */
+  undo_until?: number | null;
 }
 
 export interface AgentActivityPage {

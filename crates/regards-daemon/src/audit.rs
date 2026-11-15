@@ -126,7 +126,7 @@ pub(crate) async fn activity(state: &State, params: AgentActivityParams) -> Resu
         .read(move |conn| {
             let rows = audit::list(conn, account_id.as_deref(), before, limit + 1)?;
             let undos: Vec<i64> = rows.iter().filter_map(|row| row.entry.undo_id).collect();
-            Ok((rows, regards_store::undo::open(conn, &undos, now)?))
+            Ok((rows, regards_store::undo::open_until(conn, &undos, now)?))
         })
         .await
         .map_err(crate::session::internal)?;
@@ -157,7 +157,8 @@ pub(crate) async fn activity(state: &State, params: AgentActivityParams) -> Resu
                 error: entry.error.map(|(_, message)| message),
                 duration_ms: entry.duration_ms,
                 before: entry.before.as_deref().and_then(|text| serde_json::from_str(text).ok()),
-                undoable: entry.undo_id.is_some_and(|id| open.contains(&id)),
+                undoable: entry.undo_id.is_some_and(|id| open.contains_key(&id)),
+                undo_until: entry.undo_id.and_then(|id| open.get(&id).copied()),
                 undo_id: entry.undo_id,
             }
         })

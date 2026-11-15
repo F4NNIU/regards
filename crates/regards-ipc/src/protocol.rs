@@ -987,11 +987,14 @@ pub struct AgentActivity {
     #[serde(default)]
     pub before: Option<Value>,
     /// What reverses that change ([`methods::UNDO_APPLY`]), and whether it
-    /// still can (undo lasts ten minutes, and once).
+    /// still can (what an agent did can be undone for a day, and once).
     #[serde(default)]
     pub undo_id: Option<i64>,
     #[serde(default)]
     pub undoable: bool,
+    /// Until when it can be undone (ms since the epoch), while it can.
+    #[serde(default)]
+    pub undo_until: Option<i64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
