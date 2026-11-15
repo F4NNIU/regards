@@ -13,8 +13,8 @@ mod world;
 use regards_core::secret::Secret;
 use regards_daemon::DEFAULT_LATE_SEND_GRACE;
 use regards_ipc::protocol::{
-    AssistantKind, AssistantParams, AssistantPreview, AssistantSetSettingsParams, AssistantSettings, AssistantTask,
-    ClientKind, codes, methods,
+    AssistantCheck, AssistantKind, AssistantLocalServers, AssistantParams, AssistantPreview, AssistantProblem,
+    AssistantSetSettingsParams, AssistantSettings, AssistantTask, ClientKind, codes, methods,
 };
 use regards_ipc::{Client, ClientError};
 use regards_vault::SecretKey;
@@ -163,6 +163,14 @@ async fn the_assistant_is_off_until_chosen_and_its_key_stays_where_it_was_given(
         codes::FORBIDDEN
     );
 
+    for method in [methods::ASSISTANT_LOCAL_SERVERS, methods::ASSISTANT_CHECK] {
+        assert_eq!(
+            code(agent.call::<_, Value>(method, Value::Null).await),
+            codes::FORBIDDEN,
+            "{method}"
+        );
+    }
+
     // Off forgets everything.
     let off: AssistantSettings = desktop
         .call(methods::ASSISTANT_SET_SETTINGS, choose(None, None, None))
@@ -177,5 +185,137 @@ async fn the_assistant_is_off_until_chosen_and_its_key_stays_where_it_was_given(
             has_key: false
         }
     );
+    handle.abort();
+}
+
+/// A model server on this computer: answers every request with `status`
+/// and `answer`, and hands over what it was sent.
+async fn fake_server(
+    status: &'static str,
+    answer: &'static str,
+) -> (u16, tokio::sync::mpsc::UnboundedReceiver<String>) {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let (requests, received) = tokio::sync::mpsc::unbounded_channel();
+    tokio::spawn(async move {
+        while let Ok((mut stream, _)) = listener.accept().await {
+            let mut request = Vec::new();
+            let mut chunk = [0u8; 8192];
+            loop {
+                let read = stream.read(&mut chunk).await.unwrap_or(0);
+                if read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&chunk[..read]);
+                let text = String::from_utf8_lossy(&request);
+                if let Some(end) = text.find("\r\n\r\n") {
+                    let length = text[..end]
+                        .lines()
+                        .find_map(|line| {
+                            let lower = line.to_ascii_lowercase();
+                            lower
+                                .strip_prefix("content-length:")
+                                .map(|value| value.trim().parse::<usize>().unwrap())
+                        })
+                        .unwrap_or(0);
+                    if request.len() >= end + 4 + length {
+                        break;
+                    }
+                }
+            }
+            let _ = requests.send(String::from_utf8_lossy(&request).into_owned());
+            let response = format!(
+                "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{answer}",
+                answer.len()
+            );
+            let _ = stream.write_all(response.as_bytes()).await;
+            let _ = stream.shutdown().await;
+        }
+    });
+    (port, received)
+}
+
+#[tokio::test]
+async fn a_check_asks_the_model_for_a_word_and_says_what_is_wrong() {
+    let world = World::new(DEFAULT_LATE_SEND_GRACE).await;
+    let Running {
+        mut desktop, handle, ..
+    } = world.start().await;
+
+    assert_eq!(
+        code(
+            desktop
+                .call::<_, AssistantCheck>(methods::ASSISTANT_CHECK, Value::Null)
+                .await
+        ),
+        codes::CONFLICT,
+        "nothing to check while it is off"
+    );
+    // Only this computer is asked, whatever runs on it: the list has a known shape.
+    let found: AssistantLocalServers = desktop
+        .call(methods::ASSISTANT_LOCAL_SERVERS, Value::Null)
+        .await
+        .unwrap();
+    for server in &found.servers {
+        assert!(server.base_url.starts_with("http://localhost:"), "{}", server.base_url);
+    }
+
+    let local = |port: u16, model: &str| AssistantSetSettingsParams {
+        model: Some(model.into()),
+        ..choose(
+            Some(AssistantKind::OpenaiCompatible),
+            Some(&format!("http://localhost:{port}/v1")),
+            None,
+        )
+    };
+
+    // The model answers.
+    let (port, mut received) = fake_server("200 OK", r#"{"choices":[{"message":{"content":"ready"}}]}"#).await;
+    let _: AssistantSettings = desktop
+        .call(methods::ASSISTANT_SET_SETTINGS, local(port, "llama3.1:8b"))
+        .await
+        .unwrap();
+    assert!(received.try_recv().is_err(), "choosing a model sends nothing");
+    let check: AssistantCheck = desktop.call(methods::ASSISTANT_CHECK, Value::Null).await.unwrap();
+    assert_eq!(
+        check,
+        AssistantCheck {
+            destination: format!("localhost:{port}"),
+            model: "llama3.1:8b".into(),
+            problem: None,
+            detail: None,
+        }
+    );
+    let sent = received.try_recv().unwrap();
+    assert!(sent.starts_with("POST /v1/chat/completions "), "{sent}");
+    assert!(sent.contains(r#""model":"llama3.1:8b""#), "{sent}");
+    assert!(
+        !sent.to_ascii_lowercase().contains("authorization"),
+        "no key, none sent"
+    );
+
+    // The server is there, the model is not.
+    let (port, _received) = fake_server("404 Not Found", r#"{"error":{"message":"model 'nope' not found"}}"#).await;
+    let _: AssistantSettings = desktop
+        .call(methods::ASSISTANT_SET_SETTINGS, local(port, "nope"))
+        .await
+        .unwrap();
+    let check: AssistantCheck = desktop.call(methods::ASSISTANT_CHECK, Value::Null).await.unwrap();
+    assert_eq!(check.problem, Some(AssistantProblem::NotFound));
+    assert!(check.detail.is_some());
+
+    // Nothing listens there.
+    let closed = {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        listener.local_addr().unwrap().port()
+    };
+    let _: AssistantSettings = desktop
+        .call(methods::ASSISTANT_SET_SETTINGS, local(closed, "llama3.1:8b"))
+        .await
+        .unwrap();
+    let check: AssistantCheck = desktop.call(methods::ASSISTANT_CHECK, Value::Null).await.unwrap();
+    assert_eq!(check.problem, Some(AssistantProblem::Unreachable));
+    assert_eq!(check.destination, format!("localhost:{closed}"));
     handle.abort();
 }

@@ -602,8 +602,98 @@ button:disabled {
 
 .assistant-save {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+.assistant-fields .settings-select {
+  width: 100%;
+  max-width: none;
+  height: 36px;
+  border-radius: 9px;
+  font-size: 13.5px;
+}
+
+/* A model server found on this computer, or none. */
+.assistant-found,
+.assistant-missing {
+  display: flex;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--pill-strong);
+  border-radius: 9px;
+  background: var(--pill);
+  font-size: 13.5px;
+}
+
+.assistant-found {
+  align-items: center;
+}
+
+.assistant-found > .icon {
+  color: var(--ok);
+}
+
+.assistant-found > span {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+}
+
+.assistant-missing {
+  align-items: flex-start;
+  border-color: var(--warm-line);
+  background: var(--warm-soft);
+}
+
+.assistant-missing > .icon {
+  margin-top: 1px;
+  color: var(--warm-text);
+}
+
+.assistant-missing > div {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.assistant-missing strong {
+  font-size: 13.5px;
+}
+
+.assistant-missing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.settings-pane .assistant-missing-actions .btn {
+  margin-top: 0;
+}
+
+.assistant-key-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 5px;
+  margin-left: -8px;
+  color: var(--muted);
+}
+
+.assistant-result {
+  flex: 1;
+  min-width: 200px;
+}
+
+.assistant-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-hover);
+  font-weight: 500;
 }
 
 /* "See the original message". */

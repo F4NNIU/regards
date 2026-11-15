@@ -1119,6 +1119,19 @@ function handle(cmd: string, args: Args): unknown {
       assistant = { kind: choice.kind, base_url, model, has_key };
       return assistant;
     }
+    case "assistant_local_servers":
+      // `?local=none`: no model server runs on this computer.
+      return params.get("local") === "none"
+        ? []
+        : [{ app: "ollama", base_url: "http://localhost:11434/v1", models: ["llama3.1:8b", "qwen3:14b", "mistral-small"] }];
+    case "assistant_check":
+      if (!assistant.kind) throw new Error("the assistant is off; choose a provider in Settings to use it");
+      return {
+        destination: (assistant.base_url ?? "").replace(/^https?:\/\//, "").split("/")[0],
+        model: assistant.model,
+        problem: null,
+        detail: null,
+      };
     case "assistant_preview":
     case "assistant_run": {
       if (!assistant.kind) throw new Error("the assistant is off; choose a provider in Settings to use it");
