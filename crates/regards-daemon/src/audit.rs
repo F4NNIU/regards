@@ -8,7 +8,7 @@
 use crate::State;
 use regards_core::agents::Access;
 use regards_ipc::protocol::{
-    AgentActivity, AgentActivityParams, AgentActivityResult, AgentDecision, ClientKind, RpcError, codes,
+    AgentActivity, AgentActivityParams, AgentActivityResult, AgentDecision, ClientKind, RpcError, UndoState, codes,
 };
 use regards_store::audit::{self, Decision, NewEntry};
 use serde_json::{Value, json};
@@ -159,6 +159,16 @@ pub(crate) async fn activity(state: &State, params: AgentActivityParams) -> Resu
                 before: entry.before.as_deref().and_then(|text| serde_json::from_str(text).ok()),
                 undoable: entry.undo_id.is_some_and(|id| open.contains_key(&id)),
                 undo_until: entry.undo_id.and_then(|id| open.get(&id).copied()),
+                // Never `None` for a change that had an undo.
+                undo_state: entry.undo_id.map(|id| {
+                    if row.undone_at.is_some() {
+                        UndoState::Used
+                    } else if open.contains_key(&id) {
+                        UndoState::Open
+                    } else {
+                        UndoState::Expired
+                    }
+                }),
                 undo_id: entry.undo_id,
             }
         })

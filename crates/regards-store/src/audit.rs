@@ -65,6 +65,8 @@ pub struct NewEntry {
 pub struct Entry {
     pub id: i64,
     pub entry: NewEntry,
+    /// When the person undid it, if they did.
+    pub undone_at: Option<i64>,
 }
 
 pub fn record(tx: &Transaction<'_>, entry: &NewEntry) -> Result<i64, StoreError> {
@@ -101,7 +103,8 @@ pub fn list(
 ) -> Result<Vec<Entry>, StoreError> {
     let mut statement = conn.prepare_cached(
         "SELECT id, at, session, client, method, args, account_id, access, decision, error_code, error, \
-         duration_ms, before_state, undo_id, hold_id FROM agent_audit WHERE (?1 IS NULL OR account_id = ?1) AND id < ?2 \
+         duration_ms, before_state, undo_id, hold_id, undone_at FROM agent_audit \
+         WHERE (?1 IS NULL OR account_id = ?1) AND id < ?2 \
          ORDER BY id DESC LIMIT ?3",
     )?;
     let rows = statement.query_map(params![account_id, before.unwrap_or(i64::MAX), limit], from_row)?;
@@ -113,6 +116,15 @@ pub fn decided(tx: &Transaction<'_>, hold_id: i64, decision: Decision) -> Result
     tx.execute(
         "UPDATE agent_audit SET decision = ?2 WHERE hold_id = ?1",
         params![hold_id, decision.as_str()],
+    )?;
+    Ok(())
+}
+
+/// The person undid the change that undo `undo_id` reverses: its entry says so.
+pub fn undone(tx: &Transaction<'_>, undo_id: i64, now: i64) -> Result<(), StoreError> {
+    tx.execute(
+        "UPDATE agent_audit SET undone_at = ?2 WHERE undo_id = ?1",
+        params![undo_id, now],
     )?;
     Ok(())
 }
@@ -129,6 +141,7 @@ fn from_row(row: &Row<'_>) -> rusqlite::Result<Entry> {
     let message: Option<String> = row.get(10)?;
     Ok(Entry {
         id: row.get(0)?,
+        undone_at: row.get(15)?,
         entry: NewEntry {
             at: row.get(1)?,
             session: row.get(2)?,
@@ -205,6 +218,13 @@ mod tests {
             .unwrap();
         assert_eq!(older.len(), 1);
         assert_eq!(older[0].entry.method, "message.get");
+
+        // Undone by the person: only the entry of that undo says so.
+        assert!(all.iter().all(|e| e.undone_at.is_none()));
+        store.write(|tx| undone(tx, 12, 5_000)).await.unwrap();
+        let all = store.read(|conn| list(conn, None, None, 10)).await.unwrap();
+        let undone_at: Vec<Option<i64>> = all.iter().map(|e| e.undone_at).collect();
+        assert_eq!(undone_at, [None, Some(5_000), None, None]);
 
         assert_eq!(store.write(|tx| prune(tx, 2_500)).await.unwrap().value, 2);
         assert_eq!(store.read(|conn| list(conn, None, None, 10)).await.unwrap().len(), 2);

@@ -126,4 +126,31 @@ mod tests {
         );
         assert!(until(5_001).await.unwrap().is_empty());
     }
+
+    #[tokio::test]
+    async fn an_id_is_never_given_twice() {
+        // An agent's activity names the undo of each change: a later undo
+        // must not take the id of one that was used or ran out.
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&DataDirs::at(temp.path())).await.unwrap();
+        let first = store
+            .write(|tx| record(tx, "Archived", "{}", 100, 200))
+            .await
+            .unwrap()
+            .value;
+        store.write(move |tx| take(tx, first, 150)).await.unwrap();
+        let second = store
+            .write(|tx| record(tx, "Pinned", "{}", 160, 260))
+            .await
+            .unwrap()
+            .value;
+        assert!(second > first, "{second} after {first}");
+        // Ran out, and cleared by the next one recorded.
+        let third = store
+            .write(|tx| record(tx, "Snoozed", "{}", 1_000, 1_100))
+            .await
+            .unwrap()
+            .value;
+        assert!(third > second, "{third} after {second}");
+    }
 }

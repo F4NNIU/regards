@@ -879,6 +879,18 @@ pub(crate) async fn apply_undo(state: &Arc<State>, params: UndoParams) -> Result
             };
             let inverse: Inverse =
                 serde_json::from_str(&inverse).map_err(|error| StoreError::Corrupt(format!("undo entry: {error}")))?;
+            // Everything it set out to put back, to say what could not be.
+            let wanted = inverse.moves.len()
+                + inverse.marks.len()
+                + inverse.unblock.len()
+                + inverse.flags.len()
+                + inverse.notes_added.len()
+                + inverse.notes_removed.len()
+                + inverse.drafts_deleted.len()
+                + inverse.labels_added.len()
+                + inverse.labels_removed.len();
+            // An agent's change: its activity says the person undid it.
+            regards_store::audit::undone(tx, id, now)?;
             // Messages that have since gone (moved without COPYUID, or deleted) are skipped.
             let mut present = Vec::new();
             for (message, folder) in inverse.moves {
@@ -925,18 +937,16 @@ pub(crate) async fn apply_undo(state: &Arc<State>, params: UndoParams) -> Result
             let (labels, label_accounts) =
                 crate::labels::undo(tx, &inverse.labels_added, &inverse.labels_removed, now)?;
             accounts.extend(label_accounts);
-            Ok((
-                moved + inverse.marks.len() + inverse.unblock.len() + flags.len() + notes + drafts + labels,
-                accounts,
-            ))
+            let undone = moved + inverse.marks.len() + inverse.unblock.len() + flags.len() + notes + drafts + labels;
+            Ok((undone, wanted.saturating_sub(undone), accounts))
         })
         .await
         .map_err(conflict)?;
-    let (undone, accounts) = committed.value;
+    let (undone, skipped, accounts) = committed.value;
     for account in accounts {
         state.queue.wake(state, &account);
     }
-    Ok(json!(UndoResult { undone }))
+    Ok(json!(UndoResult { undone, skipped }))
 }
 
 /// Moved messages no longer count as come back to the inbox, nor as
