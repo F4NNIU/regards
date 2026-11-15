@@ -3,15 +3,19 @@
 //! files can go once nothing holds them: the app removes the data directory
 //! as soon as the daemon has exited, and a daemon that starts and finds the
 //! marker finishes the job before opening anything. `ui` only.
+//!
+//! The Windows uninstaller does the same with no daemon running
+//! ([`without_daemon`], `regards erase`), when the person asks for their
+//! data to go with the app.
 
-use crate::State;
 use crate::accounts::{store_error, vault, vault_error};
+use crate::{DaemonError, State};
 use regards_core::paths::DataDirs;
 use regards_ipc::protocol::{DaemonEraseParams, DaemonErased, RpcError, codes};
-use regards_store::accounts;
-use regards_vault::SecretKey;
+use regards_store::{Store, accounts};
+use regards_vault::{SecretKey, Vault};
 use serde_json::{Value, json};
-use std::path::Path;
+use std::time::Duration;
 
 /// `daemon.erase`: the credentials now; the files once the daemon has
 /// stopped. The caller stops the daemon after replying.
@@ -70,19 +74,7 @@ pub(crate) fn finish(dirs: &DataDirs) {
     if !marker.exists() {
         return;
     }
-    let Ok(entries) = std::fs::read_dir(dirs.data()) else {
-        return;
-    };
-    let mut left = 0;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path == dirs.lock_file() || path == marker {
-            continue;
-        }
-        if remove(&path).is_err() {
-            left += 1;
-        }
-    }
+    let left = dirs.remove_kept(&[dirs.lock_file(), marker.clone()]);
     if left == 0 {
         let _ = std::fs::remove_file(&marker);
         tracing::info!("everything Regards kept was removed");
@@ -91,12 +83,65 @@ pub(crate) fn finish(dirs: &DataDirs) {
     }
 }
 
-fn remove(path: &Path) -> std::io::Result<()> {
-    if path.is_dir() {
-        std::fs::remove_dir_all(path)
-    } else {
-        std::fs::remove_file(path)
+/// Everything Regards kept, removed with no daemon running: the credentials
+/// first, then the files. Refused with [`DaemonError::AlreadyRunning`] while
+/// a daemon owns `dirs`, and nothing goes if a password would stay behind.
+/// The number of credentials removed. `vault` replaces the operating
+/// system's credential store (tests).
+pub async fn without_daemon(dirs: &DataDirs, vault: Option<Vault>) -> Result<u32, DaemonError> {
+    if !dirs.data().exists() {
+        return Ok(0);
     }
+    let lock = crate::take_lock(dirs)?;
+    let mut credentials = 0;
+    // Without a database there is no account, so nothing in the credential store.
+    if dirs.mail_db().exists() {
+        let store = Store::open(dirs).await?;
+        let mut keys: Vec<SecretKey> = store
+            .read(accounts::list)
+            .await?
+            .into_iter()
+            .map(|account| SecretKey::from_stored(account.secret_key))
+            .collect();
+        keys.push(crate::assistant::key());
+        drop(store);
+        let vault = match vault {
+            Some(vault) => Ok(vault),
+            None => tokio::task::spawn_blocking(Vault::native)
+                .await
+                .map_err(|error| DaemonError::Credentials(error.to_string()))?,
+        };
+        // Without a credential store, nothing was ever kept in one.
+        if let Ok(vault) = vault {
+            for key in &keys {
+                vault
+                    .delete(key)
+                    .await
+                    .map_err(|error| DaemonError::Credentials(error.to_string()))?;
+            }
+            credentials = u32::try_from(keys.len()).unwrap_or(u32::MAX);
+        }
+    }
+    // A file the database just closed can be held for a moment more.
+    let mut left = usize::MAX;
+    for _ in 0..20 {
+        left = dirs.remove_kept(&[dirs.lock_file()]);
+        if left == 0 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+    drop(lock);
+    if left > 0 {
+        return Err(DaemonError::DataDir {
+            path: dirs.data().to_path_buf(),
+            source: std::io::Error::other(format!("{left} of its files or folders could not be removed")),
+        });
+    }
+    let _ = std::fs::remove_file(dirs.lock_file());
+    // Gone too, unless the programs are installed in it.
+    let _ = std::fs::remove_dir(dirs.data());
+    Ok(credentials)
 }
 
 #[cfg(test)]
@@ -119,6 +164,7 @@ mod tests {
             "blobs/ab/cd",
             "logs/daemon.log",
             "daemon.lock",
+            "regards.exe",
         ] {
             file(name);
         }
@@ -127,11 +173,16 @@ mod tests {
 
         std::fs::write(dirs.erase_marker(), b"").unwrap();
         finish(&dirs);
-        let left: Vec<String> = std::fs::read_dir(temp.path())
+        let mut left: Vec<String> = std::fs::read_dir(temp.path())
             .unwrap()
             .flatten()
             .map(|entry| entry.file_name().to_string_lossy().into_owned())
             .collect();
-        assert_eq!(left, ["daemon.lock"]);
+        left.sort();
+        assert_eq!(
+            left,
+            ["daemon.lock", "regards.exe"],
+            "its lock, and the installed program"
+        );
     }
 }
