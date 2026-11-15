@@ -1533,6 +1533,21 @@ export const FR: Record<string, Entry> = {
   "with the argument": "avec l’argument",
   "With your own AI key, or a model on this computer, the assistant summarises a conversation or drafts a reply. Only when you ask, and only after showing what would be sent and where. A reply lands in a draft for you to check; nothing is sent by itself. Mail that looks like it carries a sign-in code is left out.": "Avec votre propre clé IA, ou un modèle sur cet ordinateur, l’assistant résume une conversation ou rédige une réponse. Seulement quand vous le demandez, et seulement après avoir montré ce qui serait envoyé et où. Une réponse arrive dans un brouillon à vérifier ; rien ne part tout seul. Les messages qui semblent contenir un code de connexion sont laissés de côté.",
   "within the hour": "dans l’heure",
+  "just now": "à l’instant",
+  "{count} min ago": "il y a {count} min",
+  "{count} h ago": "il y a {count} h",
+  "The same message was already asked {when}, and you approved it. Sending this one sends it a second time.":
+    "Le même message a déjà été demandé {when}, et vous l’avez approuvé. Envoyer celui-ci l’envoie une deuxième fois.",
+  "The same message was already asked {when} and is still waiting for you. Sending both sends it twice.":
+    "Le même message a déjà été demandé {when} et vous attend encore. Envoyer les deux l’envoie deux fois.",
+  "The same message was already asked {when}, and you rejected it.":
+    "Le même message a déjà été demandé {when}, et vous l’avez refusé.",
+  "The same message was already asked {when}, and that request expired undecided.":
+    "Le même message a déjà été demandé {when}, et cette demande a expiré sans décision.",
+  "The same message was already asked {when} and approved, but it could not be sent.":
+    "Le même message a déjà été demandé {when} et approuvé, mais il n’a pas pu être envoyé.",
+  "The same message already went {when}, without waiting for you. Sending this one sends it a second time.":
+    "Le même message est déjà parti {when}, sans vous attendre. Envoyer celui-ci l’envoie une deuxième fois.",
   "Write the draft": "Écrire le brouillon",
   "Written by": "Écrit par",
   "You can change it any time in Settings.": "Vous pouvez le changer à tout moment dans les Paramètres.",

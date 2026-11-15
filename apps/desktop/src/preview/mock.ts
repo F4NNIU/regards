@@ -387,7 +387,11 @@ function sampleHolds(): Hold[] {
   });
   const email = owner.account.email;
   return [
-    hold(2, 1, "sending", "draft.send", "Send “Re: Garden plot schedule” to Lena Okafor", heldDraft),
+    {
+      ...hold(2, 1, "sending", "draft.send", "Send “Re: Garden plot schedule” to Lena Okafor", heldDraft),
+      // The agent asked for the same message a few minutes before, and it was approved.
+      repeats: { asked_at: started - 6 * 60_000, hold_id: 0, status: "approved" },
+    },
     {
       ...hold(3, 4, "voice", "voice.suggest", `Change your voice for ${email}`, null),
       params: {
