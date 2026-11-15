@@ -82,7 +82,7 @@ It reads `latest.json` from the latest published release (`plugins.updater.endpo
 | The Windows installer | The same installer, `…_x64-setup.exe`, run without questions |
 | A macOS DMG | The packed app, `…_aarch64.app.tar.gz` or `…_x64.app.tar.gz` |
 | The AppImage | The new AppImage |
-| The .deb or .rpm | The new package, when the build signed one; otherwise installing fails, and *Download* is offered |
+| The .deb or .rpm | The new package; the system asks for the administrator password |
 
 A release whose `latest.json` is missing is still announced, but can't be installed from the app.
 
