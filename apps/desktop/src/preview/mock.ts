@@ -459,6 +459,8 @@ function agentActivity(): AgentActivity[] {
     before,
     undo_id: undo,
     undoable: undo !== null && !agentUndone.has(undo),
+    // What an agent did can be undone for a day.
+    undo_until: undo !== null && !agentUndone.has(undo) ? at(minutesAgo) + 24 * 60 * 60_000 : null,
   });
   // A script on the command line ran while the assistant was connected: their requests interleave.
   return [

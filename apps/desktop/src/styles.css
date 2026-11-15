@@ -6869,6 +6869,19 @@ button.sender-row:hover:not(:disabled) {
   border-color: var(--accent);
 }
 
+/* How long it can still be undone, beside the button; then that it no longer can. */
+.activity-left {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.activity-left.soon {
+  color: var(--warm-text);
+}
+
 .activity-problem {
   margin: 2px 8px 6px 72px;
   font-size: 12.5px;
