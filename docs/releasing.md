@@ -29,9 +29,11 @@ Development builds don't need any of this: Cargo builds `regards` into the same 
    - checks that the tag matches the version;
    - creates a **draft** release;
    - builds:
-     - **Windows x64:** the NSIS installer. Its [hooks](../apps/desktop/src-tauri/windows/hooks.nsh) run `regards daemon stop` before files are replaced or removed, because in background mode the daemon keeps running, and Windows won't replace a running program. An MSI would need the same, so none is built. The installer speaks English and French, and follows the language of Windows;
+     - **Windows, x64 and ARM64:** the NSIS installer, one for each. Its [hooks](../apps/desktop/src-tauri/windows/hooks.nsh) run `regards daemon stop` before files are replaced or removed, because in background mode the daemon keeps running, and Windows won't replace a running program. An MSI would need the same, so none is built. The installer speaks English and French, and follows the language of Windows;
      - **macOS:** Apple silicon and Intel, as DMG;
-     - **Linux x64:** deb, rpm and AppImage, built on Ubuntu 22.04 so they run on more systems;
+     - **Linux, x64 and ARM64:** deb, rpm and AppImage, built on Ubuntu 22.04 so they run on more systems;
+
+     Each is built on a runner of its own kind, nothing is cross-compiled. The ARM64 builds for Windows and Linux are built and packaged like the others, but no maintainer has such a computer: they are published untested;
    - uploads the bundles to the draft, each with its update signature (`.sig`), and for macOS the packed app an installed copy updates from (`.app.tar.gz`);
    - writes the update manifest, `latest.json`, and uploads it too (see [Updates](#updates)).
 
@@ -79,10 +81,10 @@ It reads `latest.json` from the latest published release (`plugins.updater.endpo
 
 | An installed copy from | Updates from |
 | --- | --- |
-| The Windows installer | The same installer, `…_x64-setup.exe`, run without questions |
+| The Windows installer | The same installer, `…_x64-setup.exe` or `…_arm64-setup.exe`, run without questions |
 | A macOS DMG | The packed app, `…_aarch64.app.tar.gz` or `…_x64.app.tar.gz` |
-| The AppImage | The new AppImage |
-| The .deb or .rpm | The new package; the system asks for the administrator password |
+| The AppImage | The new AppImage, for the same processor |
+| The .deb or .rpm | The new package, for the same processor; the system asks for the administrator password |
 
 A release whose `latest.json` is missing is still announced, but can't be installed from the app.
 

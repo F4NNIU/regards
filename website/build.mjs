@@ -35,6 +35,14 @@ const files = {
   dl_rpm: `Regards-${version}-1.x86_64.rpm`,
   dl_appimage: `Regards_${version}_amd64.AppImage`,
 };
+// The ARM64 ones, which releases up to 0.3.0 do not have: their links are
+// left out of the page ({{…_off}}) until the release that has them is out.
+const armFiles = {
+  dl_windows_arm: `Regards_${version}_arm64-setup.exe`,
+  dl_deb_arm: `Regards_${version}_arm64.deb`,
+  dl_rpm_arm: `Regards-${version}-1.aarch64.rpm`,
+  dl_appimage_arm: `Regards_${version}_aarch64.AppImage`,
+};
 /** The file's own address when GitHub has it (it answers with a redirect to the file), else the releases page. */
 async function download(name) {
   const url = `https://github.com/lucienPochon/regards/releases/download/v${version}/${name}`;
@@ -50,6 +58,11 @@ async function download(name) {
 const downloads = Object.fromEntries(
   await Promise.all(Object.entries(files).map(async ([key, name]) => [key, await download(name)])),
 );
+for (const [key, name] of Object.entries(armFiles)) {
+  const url = await download(name);
+  downloads[key] = url;
+  downloads[`${key}_off`] = url === releases ? " hidden" : "";
+}
 
 /** A page's elements, without its words: tag names, ids and classes, in order. */
 function shape(html) {
