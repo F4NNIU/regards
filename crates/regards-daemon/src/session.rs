@@ -2,8 +2,8 @@
 
 use crate::{
     State, access, accounts, actions, agents, assistant, attachments, audit, compose, context, discover, draft_sync,
-    erase, folders, holds, identities, invitations, labels, mail, notes, notices, oauth, people, prefetch, saved,
-    scheduler, signatures, smart, templates, unsubscribe, voice,
+    erase, folders, holds, identities, invitations, labels, mail, notes, notices, oauth, people, prefetch, queue,
+    saved, scheduler, signatures, smart, templates, unsubscribe, voice,
 };
 use regards_core::agents::Access;
 use regards_core::build_info::{BUILD_ID, VERSION};
@@ -14,8 +14,8 @@ use regards_ipc::protocol::{
     HelloParams, HelloResult, HoldRef, JSONRPC, MemoryParams, MessageHtmlParams, MessageIds, MessageListParams,
     MessageRef, MoveParams, MuteParams, NoteAddParams, NoteListParams, NoteRef, Notification, PROTOCOL_VERSIONS,
     PeopleSuggestParams, PinParams, Principal, PriorityParams, RemindParams, Request, Response, RpcError, SearchParams,
-    SenderBlockParams, SenderSetParams, SetFlagsParams, SnoozeParams, ViewParams, VoiceSuggestParams, codes, methods,
-    negotiate, notifications,
+    SenderBlockParams, SenderSetParams, ServerStatusParams, SetFlagsParams, SnoozeParams, ViewParams,
+    VoiceSuggestParams, codes, methods, negotiate, notifications,
 };
 use regards_ipc::transport::Stream;
 use regards_store::holds::Reason;
@@ -654,6 +654,11 @@ impl Session {
             methods::NOTE_FORGET_ALL => {
                 self.require_ui()?;
                 notes::forget_all(&self.state).await
+            }
+            methods::SERVER_STATUS => {
+                let params: ServerStatusParams = params(request)?;
+                let scope = self.scope(Access::Read, params.account_id.as_deref()).await?;
+                queue::status(&self.state, params, scope).await
             }
             methods::MEMORY_GET => {
                 let params: MemoryParams = params(request)?;

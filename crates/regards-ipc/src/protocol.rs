@@ -266,6 +266,10 @@ pub mod methods {
     /// What helps write to someone: the person's voice, and what the account
     /// knows of the other person ([`MemoryResult`](super::MemoryResult)). Agents: Read.
     pub const MEMORY_GET: &str = "memory.get";
+    /// What the server has not been told yet of the changes made here, and
+    /// what it refused lately ([`ServerStatusResult`](super::ServerStatusResult)):
+    /// a change is made on this device at once, then sent. Agents: Read.
+    pub const SERVER_STATUS: &str = "server.status";
     /// Drafts in the server's Drafts folders written elsewhere (another
     /// device, webmail), to pick up. `ui` only.
     pub const DRAFT_ELSEWHERE: &str = "draft.elsewhere";
@@ -2111,6 +2115,68 @@ pub struct NoteSetEnabledParams {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NotesForgotten {
     pub forgotten: u32,
+}
+
+/// Parameters of [`methods::SERVER_STATUS`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ServerStatusParams {
+    /// The account to ask about; otherwise every account (for an agent,
+    /// every account open to it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub account_id: Option<String>,
+}
+
+/// A change to messages, as the server is told of it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ServerChange {
+    /// To another folder: archive, trash, move.
+    Move,
+    /// A Gmail label added.
+    Label,
+    /// Deleted for good, or a Gmail label removed.
+    Delete,
+    /// Read, unread, flagged or not.
+    Flags,
+}
+
+/// A change made here that the server has not been told yet.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WaitingChange {
+    pub account_id: String,
+    pub change: ServerChange,
+    /// The messages it changes.
+    pub message_ids: Vec<i64>,
+    /// How many times it was tried.
+    pub attempts: u32,
+    /// Why the last try failed (the connection, most often); it is tried again.
+    pub error: Option<String>,
+    /// When it is tried next (ms since the epoch).
+    pub retry_at: i64,
+}
+
+/// A change the server refused: it was dropped, and the messages show here
+/// as they are on the server again.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RefusedChange {
+    pub account_id: String,
+    pub change: ServerChange,
+    /// The messages it would have changed.
+    pub message_ids: Vec<i64>,
+    /// What the server said.
+    pub reason: String,
+    /// When (ms since the epoch).
+    pub refused_at: i64,
+}
+
+/// The result of [`methods::SERVER_STATUS`]. Both empty: the server has
+/// every change made here.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ServerStatusResult {
+    /// Oldest first.
+    pub waiting: Vec<WaitingChange>,
+    /// Newest first; those since the service last started, the last 200 at most.
+    pub refused: Vec<RefusedChange>,
 }
 
 /// Parameters of [`methods::MEMORY_GET`].

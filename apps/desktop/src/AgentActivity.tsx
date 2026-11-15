@@ -44,6 +44,7 @@ const ACTIONS: Record<string, string> = {
   "sender.block": "Blocked a sender",
   "account.set_agent_access": "Tried to change what agents may do",
   "agent.activity": "Tried to read this list",
+  "server.status": "Checked what the mail server has",
   "hold.get": "Checked on what it asked for",
 };
 
