@@ -56,3 +56,37 @@
   var wants=(navigator.language||'').slice(0,2).toLowerCase();
   if(wants===hint.lang && wants!==document.documentElement.lang) hint.hidden=false;
 })();
+// The speed page: the counter and the race run at the speed that was
+// measured. The page is written with the race finished, which is what stays
+// without a script or when motion is reduced (no "js" class then).
+(function(){
+  var race=document.getElementById('race'), clock=document.getElementById('clock');
+  if(!race || !document.documentElement.classList.contains('js')) return;
+  var lanes=[].map.call(race.querySelectorAll('.sp-lane'),function(el){
+    return {el:el, ms:+el.dataset.ms, bar:el.querySelector('i'), time:el.querySelector('code'), state:el.querySelector('em')};
+  });
+  var scale=+race.dataset.scale, sep=race.dataset.sep, raf=0;
+  var end=Math.max.apply(null,lanes.map(function(l){return l.ms;}));
+  function text(ms){ return (ms/1000).toFixed(2).replace('.',sep); }
+  function draw(t){
+    if(clock) clock.textContent=text(Math.min(t,+clock.dataset.ms));
+    lanes.forEach(function(l){
+      var shown=Math.min(t,l.ms), done=t>=l.ms;
+      l.bar.style.setProperty('--w',(100*shown/scale).toFixed(2)+'%');
+      l.time.textContent=text(shown)+' s';
+      l.state.textContent=done?race.dataset.on:race.dataset.off;
+      l.el.classList.toggle('wait',!done);
+    });
+  }
+  function run(){
+    cancelAnimationFrame(raf);
+    var start=performance.now();
+    (function step(now){
+      var t=Math.min(end,now-start);
+      draw(t);
+      if(t<end) raf=requestAnimationFrame(step);
+    })(start);
+  }
+  race.querySelector('.sp-again').addEventListener('click',run);
+  run();
+})();

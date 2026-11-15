@@ -26,6 +26,13 @@ Open `website/dist/index.html` in a browser to see it.
   files. Numbers in an article come from `bench/results/` and say when and on
   what they were measured.
 
+- **`src/speed/`:** the speed page, at `/speed/` and `/fr/speed/`.
+  `data.json` has the numbers, one row per app as `bench/compare-apps.ps1`
+  reports it, Regards first; `words.json` has each language's words.
+  `speed.mjs` writes both pages from them and works out every ratio and
+  every "best" mark, so new results only change `data.json` (and the line in
+  `words.json` that says when and on what they were measured).
+
 What the build fills in:
 
 - `{{version}}`: the workspace version in `Cargo.toml`, so the page follows
