@@ -7,9 +7,16 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const START = Date.UTC(2026, 10, 15, 12, 0, 0);
 
-type Sample = { id: number; undo_id: number | null; undoable: boolean; undo_until?: number | null };
+type Sample = {
+  id: number;
+  undo_id: number | null;
+  undoable: boolean;
+  undo_until?: number | null;
+  undo_state?: "open" | "used" | "expired" | null;
+};
 let entries: Sample[] = [];
 let undone = 1;
+let skipped: number | undefined;
 let refuse: string | null = null;
 
 const invoke = vi.fn((command: string) => {
@@ -34,7 +41,7 @@ const invoke = vi.fn((command: string) => {
         next: null,
       });
     case "undo_apply":
-      return refuse ? Promise.reject(new Error(refuse)) : Promise.resolve({ undone });
+      return refuse ? Promise.reject(new Error(refuse)) : Promise.resolve(skipped === undefined ? { undone } : { undone, skipped });
     default:
       return Promise.resolve(null);
   }
@@ -53,6 +60,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, now: START });
   entries = [];
   undone = 1;
+  skipped = undefined;
   refuse = null;
   invoke.mockClear();
 });
@@ -91,7 +99,20 @@ describe("the time left to undo", () => {
 
     await pass(30_000);
     expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
-    expect(screen.getByText("Can no longer be undone")).toBeTruthy();
+    expect(screen.getByText("Undo expired")).toBeTruthy();
+  });
+
+  it("tells a change that was undone from one whose time ended, after a reload", async () => {
+    entries = [
+      { id: 1, undo_id: 9001, undoable: false, undo_until: null, undo_state: "used" },
+      { id: 2, undo_id: 9002, undoable: false, undo_until: null, undo_state: "expired" },
+      { id: 3, undo_id: null, undoable: false, undo_state: null },
+    ];
+    await show();
+    expect(screen.getAllByText("Undone")).toHaveLength(1);
+    expect(screen.getAllByText("Undo expired")).toHaveLength(1);
+    expect(screen.queryByText("Can no longer be undone")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
 
   it("says so on a change whose undo is over, and nothing on what changed nothing", async () => {
@@ -123,6 +144,25 @@ describe("undoing from the row", () => {
     await screen.findByText("Undone");
     expect(invoke).toHaveBeenCalledWith("undo_apply", { id: 9001 });
     expect(screen.queryByText("23 h left")).toBeNull();
+  });
+
+  it("says how much could not be put back when only part came back", async () => {
+    undone = 2;
+    skipped = 1;
+    await show();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await screen.findByText("Undone in part");
+    expect(screen.queryByText("Undone")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toBe("1 change could not be put back.");
+  });
+
+  it("says a plain Undone when nothing was skipped", async () => {
+    undone = 3;
+    skipped = 0;
+    await show();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await screen.findByText("Undone");
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("says that nothing was set back, instead of Undone", async () => {

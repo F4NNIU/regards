@@ -34,7 +34,7 @@ You get a notification. A request you do not decide within a day expires.
 
 ## 3. See and undo what agents did
 
-Settings › Agents lists every request an agent made, allowed or refused, with what it changed. Changes can be undone there for a day.
+Settings › Agents lists every request an agent made, allowed or refused, with what it changed. Changes can be undone there for a day. Each row shows how long is left, then whether the change was undone or its time ended. If an undo cannot put everything back (a message gone from the server, or something you changed again since), the row says how many changes it left.
 
 A change is made in Regards at once, and sent to your mail server right after. An agent can ask what the server has not been told yet, and what it refused (`regards pending`): a refused change is dropped, and the message shows as it is on the server again.
 

@@ -186,6 +186,12 @@ export interface AgentActivity {
   undoable: boolean;
   /** Until when it can be undone (ms since the epoch), while it can. */
   undo_until?: number | null;
+  /**
+   * Where its undo stands: still `open`, `used` (it was undone) or
+   * `expired`; `null` when the change had none. A daemon that does not
+   * say leaves `undoable` to go by.
+   */
+  undo_state?: "open" | "used" | "expired" | null;
 }
 
 export interface AgentActivityPage {

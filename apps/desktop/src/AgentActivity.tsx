@@ -4,7 +4,7 @@ import { type ActivityKind, type AgentActivity as Entry, type AgentDecision, act
 import { fullDate } from "./format";
 import { Icon } from "./icons";
 import { radioKeys, radioTab } from "./radios";
-import { t } from "./i18n";
+import { t, tn } from "./i18n";
 
 /** How often the list looks for new entries while it is shown (recording wakes no client). */
 const POLL_MS = 5000;
@@ -397,6 +397,8 @@ function Row({
   const until = entry.undo_until ?? null;
   const reversible = entry.undo_id !== null;
   const open = reversible && entry.undoable && (until === null || until > now);
+  // Why it no longer can be: it was undone, or its time ended (here, or as the daemon says).
+  const over = !reversible || open ? null : entry.undo_state === "used" ? "used" : entry.undoable || entry.undo_state === "expired" ? "expired" : "unknown";
 
   const undo = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
     // Inside the row's summary: act, without opening the details.
@@ -407,7 +409,12 @@ function Row({
     applyUndo(entry.undo_id ?? 0)
       .then(
         (result) => {
-          if (result.undone > 0) {
+          const skipped = result.skipped ?? 0;
+          if (result.undone > 0 && skipped > 0) {
+            // Part of it came back: say how much did not, not a plain "Undone".
+            setDone({ label: t("Undone in part"), tone: "held" });
+            setProblem(tn(skipped, "1 change could not be put back.", "{count} changes could not be put back."));
+          } else if (result.undone > 0) {
             setDone({ label: t("Undone"), tone: "approved" });
           } else {
             // The undo ran and found nothing it could set back: say so, not "Undone".
@@ -446,7 +453,11 @@ function Row({
                 {t("Undo")}
               </button>
             </>
-          ) : reversible ? (
+          ) : over === "used" ? (
+            <span className="chip activity-decision approved">{t("Undone")}</span>
+          ) : over === "expired" ? (
+            <span className="activity-left">{t("Undo expired")}</span>
+          ) : over === "unknown" ? (
             <span className="activity-left">{t("Can no longer be undone")}</span>
           ) : null}
         </summary>
