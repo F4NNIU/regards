@@ -1057,6 +1057,7 @@ impl Session {
             reason,
             description: description.clone(),
             draft: None,
+            send: None,
             people: Vec::new(),
             subject: description,
         };

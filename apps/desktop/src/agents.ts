@@ -233,6 +233,13 @@ export interface Hold {
   /** Once approved: what running it gave, or (status "failed") why it could not run. */
   result: unknown;
   error: string | null;
+  /**
+   * For a send: the same message (recipients, subject, text) was already
+   * asked to be sent in this account within the last day. `hold_id` and
+   * `status`: the request it waited as and what became of it; both null
+   * when it went by itself after the account's undo window.
+   */
+  repeats?: { asked_at: number; hold_id: number | null; status: HoldStatus | null } | null;
 }
 
 /** Holds, newest first; only those still waiting with `pending`. */

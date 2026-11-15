@@ -24,6 +24,7 @@ To stop every agent at once, turn agents off in Settings › Agents. While they 
 - **Every send**, unless you chose an undo window for the account:
   - **By default:** an agent's `send` waits in Settings › Agents. You see the draft there, and approve or reject it. Regards sends exactly what you saw: if the draft changes after it was held, it is not sent on that approval.
   - **With an undo window** (Settings › Agents, per account, 10 seconds to 10 minutes): the message waits in the Outbox for that long, and you are told. You can call it back there before it goes; the agent cannot. More than 20 such sends in an hour wait for your approval again.
+  - **The same message asked twice** (same recipients, subject and text within a day, as when an agent's run starts over): the second request says so, with what became of the first, and it always waits for your approval, even with an undo window.
 - **Changing more than 50 messages at once.**
 - **Deleting for good.**
 - **A suggested voice**: you see it, and approve it, edit it first, or reject it.
