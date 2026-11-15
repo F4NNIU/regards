@@ -41,6 +41,18 @@ Development builds don't need any of this: Cargo builds `regards` into the same 
 
 To build one bundle locally: `cd apps/desktop && npm run release`, optionally with `-- --bundles nsis` (or `dmg`, `deb` …) for a single format.
 
+## Checking where a download was built
+
+For every installer and package, the workflow records a *build attestation*: a signed statement, kept by GitHub, that the file was built by this repository's Release workflow from that tag. It applies on every system, signed or not. With the [GitHub CLI](https://cli.github.com):
+
+```
+gh attestation verify Regards_0.4.0_x64-setup.exe --repo lucienPochon/regards
+```
+
+It fails for a file that was changed, or built anywhere else. Releases up to 0.3.0 have no attestation.
+
+**When Windows code signing arrives:** signing changes the installer, so it has to be attested after it is signed.
+
 ## Not yet
 
 - **Signing:**
