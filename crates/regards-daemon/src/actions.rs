@@ -537,6 +537,21 @@ async fn mark_messages(
 /// Undo entries last this long; the app offers undo for the first seconds.
 const UNDO_FOR_MS: i64 = 10 * 60 * 1000;
 
+/// What an agent did can be undone for this long: the person may only look
+/// at it hours later (ADR-0012).
+const AGENT_UNDO_FOR_MS: i64 = 24 * 60 * 60 * 1000;
+
+/// An agent's change gave `result`: keep its undo, if it has one, for a day
+/// instead of minutes. Returns the undo's id.
+pub(crate) async fn keep_undo_for_agent(state: &State, result: &Value) -> Option<i64> {
+    let id = result.get("undo")?.get("id")?.as_i64()?;
+    let until = now_ms() + AGENT_UNDO_FOR_MS;
+    if let Err(error) = state.store.write_quiet(move |tx| undo::keep_until(tx, id, until)).await {
+        tracing::warn!(%error, "an agent's change keeps the short undo");
+    }
+    Some(id)
+}
+
 /// A mark to put back on undo: account, Message-ID, which mark, what it was.
 type MarkUndo = (String, String, Mark, Option<i64>);
 
