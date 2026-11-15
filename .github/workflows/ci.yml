@@ -107,6 +107,8 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/desktop/package-lock.json
+      - name: One version everywhere
+        run: node scripts/check-version.mjs
       - run: npm ci
       - name: Known vulnerabilities in the web packages
         run: npm audit --audit-level=moderate

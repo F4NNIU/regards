@@ -24,7 +24,7 @@ Development builds don't need any of this: Cargo builds `regards` into the same 
    - `apps/desktop/package.json`;
    - `apps/desktop/src-tauri/tauri.conf.json`.
 
-   Commit through a pull request, as usual.
+   Commit through a pull request, as usual. CI fails when they differ ([`scripts/check-version.mjs`](../apps/desktop/scripts/check-version.mjs)).
 2. **Tag the merged commit** `v<version>`, for example `git tag v0.1.0 && git push origin v0.1.0`. The workflow then:
    - checks that the tag matches the version;
    - creates a **draft** release;
