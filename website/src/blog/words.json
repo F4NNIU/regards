@@ -1,0 +1,40 @@
+{
+  "en": {
+    "nav_label": "Sections",
+    "nav_agents": "AI agents",
+    "nav_download": "Download",
+    "nav_providers": "Supported email",
+    "lang_label": "Language",
+    "cta_small": "Download free",
+    "final_heading": "Try the <span>fast one.</span>",
+    "final_text": "Regards {{version}} is free and open source, for Windows, macOS and Linux.",
+    "dl_windows_text": "Download for Windows",
+    "licence": "Regards · Apache-2.0 or MIT",
+    "other_text": "Lire cette page en français",
+    "blog_label": "Blog",
+    "all_posts": "← All articles",
+    "read": "Read the article",
+    "index_title": "The Regards blog: speed, open source and how the app is built",
+    "index_heading": "Notes from <em>the workshop.</em>",
+    "index_description": "How Regards is built, what we measure, and why we make the choices we make."
+  },
+  "fr": {
+    "nav_label": "Rubriques",
+    "nav_agents": "Agents IA",
+    "nav_download": "Télécharger",
+    "nav_providers": "E-mails pris en charge",
+    "lang_label": "Langue",
+    "cta_small": "Télécharger",
+    "final_heading": "Essayez <span>le plus rapide.</span>",
+    "final_text": "Regards {{version}} est gratuit et open source, pour Windows, macOS et Linux.",
+    "dl_windows_text": "Télécharger pour Windows",
+    "licence": "Regards · Apache-2.0 ou MIT",
+    "other_text": "Read this page in English",
+    "blog_label": "Blog",
+    "all_posts": "← Tous les articles",
+    "read": "Lire l’article",
+    "index_title": "Le blog de Regards : vitesse, open source et coulisses de l’application",
+    "index_heading": "Nouvelles de <em>l’atelier.</em>",
+    "index_description": "Comment Regards est construit, ce que nous mesurons, et pourquoi nous faisons ces choix."
+  }
+}

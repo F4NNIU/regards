@@ -87,6 +87,8 @@ for (const [lang, page] of Object.entries(pages)) {
   const shared = { version, releases, ...downloads, root, site, shots: page.shots ?? "" };
   const html = fill(layout, {
     ...shared,
+    alt_en: `${site}/`,
+    alt_fr: `${site}/fr/`,
     lang,
     locale: page.locale,
     url: `${site}/${page.path}`,
@@ -100,6 +102,79 @@ for (const [lang, page] of Object.entries(pages)) {
   mkdirSync(join(out, page.path), { recursive: true });
   writeFileSync(join(out, page.path, "index.html"), html);
   console.log(`${lang}: dist/${page.path}index.html`);
+}
+
+// The blog: src/blog/posts.json lists the articles, newest first. Each has
+// its text in src/blog/<slug>.en.html and <slug>.fr.html, which must have the
+// same elements, like the pages. They are published at /blog/<slug>/ and
+// /fr/blog/<slug>/, with an index of all of them at /blog/ and /fr/blog/.
+const frame = read("src", "blog", "frame.html");
+const words = JSON.parse(read("src", "blog", "words.json"));
+const posts = JSON.parse(read("src", "blog", "posts.json"));
+const day = (date, lang) =>
+  new Intl.DateTimeFormat(lang === "fr" ? "fr-CH" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T00:00:00Z`));
+function blogPage(lang, path, depth, title, description, content) {
+  const prefix = lang === "fr" ? "fr/" : "";
+  const root = "../".repeat(depth + (lang === "fr" ? 1 : 0));
+  const shared = { version, releases, ...downloads, root, site, shots: lang === "fr" ? "-fr" : "", home: `${root}${prefix}` || "./", blog: `${root}${prefix}blog/`, ...Object.fromEntries(Object.entries(words[lang]).map(([key, text]) => [key, fill(text, { version })])) };
+  const other = lang === "fr" ? "en" : "fr";
+  const html = fill(layout, {
+    ...shared,
+    alt_en: `${site}/${path}`,
+    alt_fr: `${site}/fr/${path}`,
+    lang,
+    locale: lang,
+    url: `${site}/${prefix}${path}`,
+    title: escape(title),
+    description: escape(description),
+    other_lang: other,
+    other_href: `${root}${other === "fr" ? "fr/" : ""}${path}`,
+    other_text: escape(words[lang].other_text),
+    body: fill(frame, {
+      ...shared,
+      en_href: `${root}${path}`,
+      fr_href: `${root}fr/${path}`,
+      en_current: lang === "en" ? ' aria-current="true"' : "",
+      fr_current: lang === "fr" ? ' aria-current="true"' : "",
+      content: fill(content, shared),
+    }),
+  });
+  mkdirSync(join(out, prefix, path), { recursive: true });
+  writeFileSync(join(out, prefix, path, "index.html"), html);
+}
+for (const lang of ["en", "fr"]) {
+  const w = words[lang];
+  for (const post of posts) {
+    const body = read("src", "blog", `${post.slug}.${lang}.html`);
+    const mine = shape(body);
+    const theirs = shape(read("src", "blog", `${post.slug}.en.html`));
+    const at = mine.findIndex((element, i) => element !== theirs[i]);
+    if (at !== -1 || mine.length !== theirs.length) {
+      const where = at === -1 ? Math.min(mine.length, theirs.length) : at;
+      throw new Error(
+        `blog/${post.slug}.${lang}.html is out of step with the English at element ${where}: ` +
+          `${mine[where] ?? "(nothing)"} where English has ${theirs[where] ?? "(nothing)"}`,
+      );
+    }
+    const text = post[lang];
+    const content =
+      `<header class="phead"><div class="wrap"><span class="kick">${escape(text.kicker)} · <time datetime="${post.date}">${day(post.date, lang)}</time></span>` +
+      `<h1>${text.heading}</h1><p>${escape(text.description)}</p></div></header>\n` +
+      `<article class="post">\n${body}\n<p class="back"><a href="{{blog}}">${escape(w.all_posts)}</a></p>\n</article>`;
+    blogPage(lang, `blog/${post.slug}/`, 2, `${text.title} · Regards`, text.description, content);
+  }
+  const cards = posts
+    .map(
+      (post) =>
+        `<a class="pcard" href="{{blog}}${post.slug}/"><span class="kick">${escape(post[lang].kicker)} · <time datetime="${post.date}">${day(post.date, lang)}</time></span>` +
+        `<h2>${escape(post[lang].title)}</h2><p>${escape(post[lang].description)}</p><b>${escape(w.read)}</b></a>`,
+    )
+    .join("\n");
+  const index =
+    `<header class="phead"><div class="wrap"><span class="kick">${escape(w.blog_label)}</span><h1>${w.index_heading}</h1><p>${escape(w.index_description)}</p></div></header>\n` +
+    `<div class="posts"><div class="wrap">\n${cards}\n</div></div>`;
+  blogPage(lang, "blog/", 1, w.index_title, w.index_description, index);
+  console.log(`${lang}: ${posts.length} articles`);
 }
 cpSync(join(here, "assets"), join(out, "assets"), { recursive: true });
 // GitHub Pages: serve the files as they are.

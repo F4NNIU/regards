@@ -1,0 +1,43 @@
+<p>Anyone can publish a chart where their product wins. We wanted numbers we could defend line by line, so before measuring anything we wrote down the rules, and then we broke several of them by accident. This is both lists.</p>
+
+<h2>The six rules</h2>
+<ol>
+  <li><b>The same mail.</b> Every app gets one account and nothing else: a mailbox of 20,000 generated messages, identical byte for byte. A script fills it and prints a fingerprint of the set, which is published with the results.</li>
+  <li><b>A clean user.</b> A user account made for the test, each app freshly installed and left on its default settings.</li>
+  <li><b>A quiet computer.</b> Plugged in, nothing else open, one app at a time.</li>
+  <li><b>Everything is stated.</b> The date, the computer, the system, each app’s version and the exact version of the test.</li>
+  <li><b>Every app, every number.</b> Nothing is left out because Regards loses it.</li>
+  <li><b>Run again at each release.</b> Old results stay in the repository.</li>
+</ol>
+
+<h2>Measuring from the outside</h2>
+<p>The test does not use any app’s own instruments, ours included. It watches each app the way you would with a stopwatch: when a window appears, when what it shows stops changing, how much processor time and memory its processes use, how much disk it takes. An app is counted with every process it starts, so nobody looks lighter by hiding work in a helper.</p>
+
+<h2>The five mistakes</h2>
+<p><b>1. Our editor made two apps quit.</b> The first run reported that Spark and Mailspring never opened a window. They had started and exited at once: the test was launched from a code editor that sets a variable which tells apps of their kind to behave as a command-line tool. The test now clears it.</p>
+<p><b>2. We counted a stranger.</b> One app showed 347 seconds of processor time for a launch. The test had mistaken an unrelated long-running program for one of the app’s helpers. Processes are now matched by the folder they are installed in.</p>
+<p><b>3. Watching changed the result.</b> To know when a window has finished drawing, the test takes small pictures of it. Taking a picture makes an app draw, which is work it would not do alone, and every app looked busy for three extra seconds. Launch time and processor time are now measured in separate launches, and nobody is watching during the second kind.</p>
+<p><b>4. We measured the wrong Thunderbird.</b> Two versions were installed, and the account had been added in the other one. Our first Thunderbird numbers were for an app with no mail. We measured again and corrected the results; the mistake is recorded in the result file.</p>
+<p><b>5. Regards refused to start, sometimes.</b> A few launches showed no window at all. Regards allows one copy at a time, another copy was open on the same screen, and the new one politely handed over to it and left.</p>
+<p>None of these favoured Regards in the end, and one of them was hiding a result that did not flatter us. That is the argument for the rules: you find your own errors only if you are looking for them.</p>
+
+<h2>Two rules we have not fully kept yet</h2>
+<p>This first run was made while the computer was in use, not on a quiet one, and Thunderbird was measured in its beta version because that is where the account was. Neither changes who comes first, but both are against our own rules, so both are written in the result files. The run will be redone properly at the next release of Regards.</p>
+
+<h2>What the test does not say</h2>
+<ul>
+  <li>How fast each app fetches a mailbox for the first time, opens a message or searches. Those need each app to be driven, and are next.</li>
+  <li>The first launch after the computer starts, which is slower for every app.</li>
+  <li>Anything about macOS or Linux yet.</li>
+  <li>Anything about your computer. For that, run it.</li>
+</ul>
+
+<h2>Run it yourself</h2>
+<pre><i># get the code</i>
+<b>&gt;</b> git clone https://github.com/lucienPochon/regards
+<b>&gt;</b> cd regards
+
+<i># measure the mail apps you have (Windows)</i>
+<b>&gt;</b> powershell -ExecutionPolicy Bypass -File bench\compare-apps.ps1</pre>
+<p>The script closes and reopens your mail apps, so do not run it while a message is being sent. The method is described in the <a href="https://github.com/lucienPochon/regards/tree/main/bench">bench folder</a>, with the raw results of every run. If you get different numbers, we want to see them.</p>
+<p>The results themselves are in <a href="{{blog}}opens-in-0-89-seconds/">Regards opens in 0.89 seconds.</a></p>

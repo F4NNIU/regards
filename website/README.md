@@ -17,6 +17,15 @@ Open `website/dist/index.html` in a browser to see it.
 - **`src/layout.html`:** the `<head>` both share.
 - **`assets/`:** styles, script, fonts and the mark, copied as they are.
 
+- **`src/blog/`:** the blog, at `/blog/` and `/fr/blog/`. `posts.json` lists
+  the articles, newest first, with each one's date, title, heading and
+  description in both languages. An article's text is in `<slug>.en.html` and
+  `<slug>.fr.html`, which must have the same elements, like the pages.
+  `frame.html` is the bar and the foot around every blog page, and
+  `words.json` their words. To add an article: one entry in `posts.json`, two
+  files. Numbers in an article come from `bench/results/` and say when and on
+  what they were measured.
+
 What the build fills in:
 
 - `{{version}}`: the workspace version in `Cargo.toml`, so the page follows

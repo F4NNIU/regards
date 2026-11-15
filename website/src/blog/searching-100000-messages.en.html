@@ -1,0 +1,34 @@
+<p>Search is where mail apps show their age. A mailbox grows for years, and one day the search box takes a breath before answering. We built Regards so that day does not come, and we test it on a mailbox of 100,000 messages at every change.</p>
+
+<div class="wide tbl"><table>
+  <thead><tr><th>What you type</th><th>Time to answer</th></tr></thead>
+  <tbody>
+    <tr><th>A rare word, in about 300 messages</th><td>7 ms</td></tr>
+    <tr><th>A word in about 1,000 messages</th><td>38 ms</td></tr>
+    <tr><th>A very common word, in 88,000 messages</th><td>31 ms</td></tr>
+    <tr><th>Two words</th><td>7 ms</td></tr>
+    <tr><th>The first two letters of a word</th><td>23 ms</td></tr>
+    <tr><th>An exact phrase</th><td>27 ms</td></tr>
+    <tr><th>Everything from one sender</th><td class="best">1.5 ms</td></tr>
+    <tr><th>A word, unread only, with a file attached</th><td>20 ms</td></tr>
+    <tr><th>A word typed wrong, with a suggestion</th><td>20 ms</td></tr>
+  </tbody>
+</table></div>
+
+<p>The slowest of these is 38 milliseconds. A blink of an eye takes about a hundred. Each search returns the first page of results, best matches first.</p>
+
+<h2>How it works</h2>
+<p><b>An index, kept on your computer.</b> As mail arrives, Regards adds its sender, its subject and the text it holds to a search index stored next to your messages. Searching reads the index, not the mail, so the time depends on what you look for and hardly at all on how much mail you have.</p>
+<p><b>It answers from the second letter.</b> The index also knows the beginnings of words. Type two letters and results appear, then narrow as you keep typing.</p>
+<p><b>Accents do not matter.</b> Searching for “resume” finds “résumé”, and the other way round.</p>
+<p><b>The best match comes first.</b> A word found in the subject counts more than one in the sender’s name, which counts more than one in the text of the message.</p>
+<p><b>Typos get a suggestion.</b> When nothing matches, Regards looks for the closest word your mail does contain and offers it.</p>
+<p><b>Filters are part of the search.</b> You can ask for unread mail, mail with files, mail from one person or an exact phrase, alone or together with words.</p>
+
+<h2>Private by construction</h2>
+<p>The index is a file on your computer. Building it and searching it involve no server of ours, because there is none. Nothing you type in the search box leaves your machine, except when Regards also asks your own mail provider for older messages it has not stored yet, and shows both in one list.</p>
+
+<h2>It does not slow the rest down</h2>
+<p>New mail is indexed in the background, in small batches, so that reading and filing stay instant while a large mailbox is being indexed. On the same 100,000 messages, a page of the inbox is ready in 1.2 milliseconds and a whole conversation in 0.2.</p>
+
+<p class="fine">Measured on 15 November 2026 on Windows 11 (AMD Ryzen 7 5800X) with Regards’ own test, which fills a mailbox with 100,000 generated messages and times the mail engine without the window. The times are the slowest of repeated runs. These are Regards’ figures alone: we have not yet timed search in other mail apps, and will publish that comparison when we have. The test is in the repository: <a href="https://github.com/lucienPochon/regards/blob/main/crates/regards-store/tests/scale.rs">scale.rs</a>.</p>
