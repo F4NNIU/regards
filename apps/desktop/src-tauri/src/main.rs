@@ -12,6 +12,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod agent_apps;
+mod applog;
 mod background;
 mod badge;
 mod command_line;
@@ -585,6 +586,29 @@ async fn assistant_run(
                 all: all.unwrap_or(false),
             },
         )
+        .await
+        .map_err(describe)
+}
+
+/// The model servers answering on this computer, and the models each lists.
+#[tauri::command]
+async fn assistant_local_servers(
+    bridge: State<'_, Bridge>,
+) -> Result<Vec<regards_ipc::protocol::LocalModelServer>, String> {
+    let mut client = bridge.connect().await?.client;
+    let found: regards_ipc::protocol::AssistantLocalServers = client
+        .call(methods::ASSISTANT_LOCAL_SERVERS, Value::Null)
+        .await
+        .map_err(describe)?;
+    Ok(found.servers)
+}
+
+/// One word asked of the chosen model, with no mail: does it answer?
+#[tauri::command]
+async fn assistant_check(bridge: State<'_, Bridge>) -> Result<regards_ipc::protocol::AssistantCheck, String> {
+    let mut client = bridge.connect().await?.client;
+    client
+        .call(methods::ASSISTANT_CHECK, Value::Null)
         .await
         .map_err(describe)
 }
@@ -1927,7 +1951,7 @@ async fn forward_changes(app: AppHandle) {
                     app.state::<badge::Badge>().poke();
                 }
             }
-            Err(error) => eprintln!("change feed unavailable: {error}"),
+            Err(error) => applog::app_log!("change feed unavailable: {error}"),
         }
         tokio::time::sleep(backoff).await;
         backoff = (backoff * 2).min(Duration::from_secs(30));
@@ -1999,25 +2023,10 @@ fn unlocked(lock: &std::path::Path) -> bool {
     }
 }
 
-/// Everything in the data directory but the erase marker; whether all went.
+/// Everything in the data directory but the erase marker (and, on Windows,
+/// the programs installed in that same folder); whether all went.
 fn remove_all_but_marker(dirs: &DataDirs) -> bool {
-    let Ok(entries) = std::fs::read_dir(dirs.data()) else {
-        return true;
-    };
-    let mut all = true;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path == dirs.erase_marker() {
-            continue;
-        }
-        let removed = if path.is_dir() {
-            std::fs::remove_dir_all(&path)
-        } else {
-            std::fs::remove_file(&path)
-        };
-        all &= removed.is_ok();
-    }
-    all
+    dirs.remove_kept(&[dirs.erase_marker()]) == 0
 }
 
 /// Quit Regards fully, as the tray's Quit does: the app's own daemon stops
@@ -2077,6 +2086,7 @@ fn notifications_set(background: State<'_, background::Background>, on: bool) ->
 }
 
 fn main() {
+    applog::start(DataDirs::resolve().ok().as_ref());
     let app = tauri::Builder::default()
         // Must come first: a second app instance would replace this one's daemon.
         .plugin(tauri_plugin_dialog::init())
@@ -2094,6 +2104,9 @@ fn main() {
         ))
         // Used from Rust only, as above.
         .plugin(tauri_plugin_notification::init())
+        // Installs a later version when the person asks (updates.rs). Used from
+        // Rust only, as above; it asks nothing of the network by itself.
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // The main window's size, place and maximised state, put back when it is
         // first shown (background::show). Composer windows are not kept.
         .plugin(
@@ -2178,6 +2191,7 @@ fn main() {
             system::open_url,
             system::open_in_agent,
             system::add_to_cursor,
+            system::add_to_lm_studio,
             agent_apps::agent_apps_found,
             command_line::command_line,
             account_update,
@@ -2196,6 +2210,8 @@ fn main() {
             set_assistant_settings,
             assistant_preview,
             assistant_run,
+            assistant_local_servers,
+            assistant_check,
             prefetch_get,
             prefetch_set,
             account_set_auto_copy,
@@ -2213,6 +2229,7 @@ fn main() {
             updates::update_set_checks,
             updates::update_check,
             updates::update_open,
+            updates::update_install,
             account_oauth_providers,
             account_oauth_start,
             account_oauth_finish,

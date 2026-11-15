@@ -119,6 +119,10 @@ pub(crate) async fn messages_before(state: &State, ids: &[i64]) -> Result<(Vec<S
                         .unwrap_or_default(),
                     None => Marks::default(),
                 };
+                let labels: Vec<i64> = regards_store::labels::of(conn, &[id])?
+                    .into_iter()
+                    .flat_map(|(_, labels)| labels)
+                    .collect();
                 before.push(json!({
                     "id": id,
                     "mailbox_id": message.moving_to.unwrap_or(message.mailbox_id),
@@ -129,6 +133,7 @@ pub(crate) async fn messages_before(state: &State, ids: &[i64]) -> Result<(Vec<S
                     "aside": marks.aside_at.is_some(),
                     "snoozed_until": marks.snoozed_until,
                     "remind_at": marks.remind_at,
+                    "labels": labels,
                 }));
                 accounts.insert(mailbox.account_id);
             }

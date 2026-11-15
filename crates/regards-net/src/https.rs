@@ -35,6 +35,12 @@ pub async fn get(url: &str, options: &TlsOptions) -> Result<HttpsResponse, NetEr
     exchange("GET", url, "", "", options, TIMEOUT).await
 }
 
+/// GET a URL, waiting `wait` at most: a short one, to see whether a server
+/// on this computer answers at all.
+pub async fn get_within(url: &str, wait: Duration, options: &TlsOptions) -> Result<HttpsResponse, NetError> {
+    exchange("GET", url, "", "", options, wait).await
+}
+
 /// POST a JSON `body` with these extra `headers`, waiting up to `wait` (an
 /// AI model can take a while). `https://` anywhere; `http://` only to this
 /// computer (`localhost`, `127.0.0.1`, `[::1]`).

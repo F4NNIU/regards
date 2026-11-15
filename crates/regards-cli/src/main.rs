@@ -48,6 +48,15 @@ enum Command {
         #[arg(long, value_name = "DIR")]
         install: Option<std::path::PathBuf>,
     },
+    /// Remove everything Regards keeps on this computer: passwords, mail,
+    /// settings and logs. What the Windows uninstaller runs when asked to
+    /// remove the data too; in the app, it is Support › Remove everything.
+    #[command(hide = true)]
+    Erase {
+        /// Exactly "erase everything", so nothing goes by mistake.
+        #[arg(long, value_name = "WORDS")]
+        confirm: String,
+    },
     /// Whether this command is on your PATH, for agents; on Windows, put it there or take it off.
     Path {
         #[command(subcommand)]
@@ -158,6 +167,7 @@ async fn run(cli: Cli) -> anyhow::Result<ExitCode> {
             }
             Ok(ExitCode::SUCCESS)
         }
+        Command::Erase { confirm } => erase(&DataDirs::resolve()?, &confirm, cli.json).await,
         Command::Daemon(command) => {
             let dirs = DataDirs::resolve()?;
             match command {
@@ -168,6 +178,28 @@ async fn run(cli: Cli) -> anyhow::Result<ExitCode> {
             }
         }
     }
+}
+
+/// Everything Regards kept goes, with no daemon running: it is not asked,
+/// so that no connected program can have this done for it (`daemon.erase`
+/// stays the app's own).
+async fn erase(dirs: &DataDirs, confirm: &str, as_json: bool) -> anyhow::Result<ExitCode> {
+    let words = regards_ipc::protocol::DaemonEraseParams::CONFIRMATION;
+    anyhow::ensure!(confirm == words, "to erase everything, pass --confirm \"{words}\"");
+    let credentials = match regards_daemon::erase_without_daemon(dirs, None).await {
+        Ok(credentials) => credentials,
+        Err(error @ DaemonError::AlreadyRunning(_)) => {
+            eprintln!("{error}. Quit Regards (or run `regards daemon stop`) first.");
+            return Ok(ExitCode::from(EXIT_ALREADY_RUNNING));
+        }
+        Err(error) => return Err(error.into()),
+    };
+    if as_json {
+        println!("{}", json!({ "erased": true, "credentials": credentials }));
+    } else {
+        println!("Everything Regards kept on this computer was removed.");
+    }
+    Ok(ExitCode::SUCCESS)
 }
 
 async fn daemon_run(dirs: DataDirs, ui_handoff: bool) -> anyhow::Result<ExitCode> {

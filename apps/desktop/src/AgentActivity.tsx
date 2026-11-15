@@ -4,12 +4,22 @@ import { type ActivityKind, type AgentActivity as Entry, type AgentDecision, act
 import { fullDate } from "./format";
 import { Icon } from "./icons";
 import { radioKeys, radioTab } from "./radios";
-import { t } from "./i18n";
+import { t, tn } from "./i18n";
 
 /** How often the list looks for new entries while it is shown (recording wakes no client). */
 const POLL_MS = 5000;
 /** Entries a session shows before "Show all". */
 const FOLDED = 5;
+/** How often the time left to undo is counted again. */
+const TICK_MS = 10_000;
+
+/** How long a change can still be undone, never rounded up: "23 h left", "7 min left". */
+export function undoLeft(until: number, now: number): string {
+  const left = until - now;
+  if (left >= 3_600_000) return t("{count} h left", { count: Math.floor(left / 3_600_000) });
+  if (left >= 60_000) return t("{count} min left", { count: Math.floor(left / 60_000) });
+  return t("Under a minute left");
+}
 
 /** What agents did, in plain words; other methods show as named. */
 const ACTIONS: Record<string, string> = {
@@ -36,6 +46,8 @@ const ACTIONS: Record<string, string> = {
   "message.delete": "Deleted for good",
   "message.move": "Moved",
   "message.set_flags": "Marked read, unread or flagged",
+  "message.labels": "Read labels",
+  "message.set_labels": "Changed labels",
   "message.pin": "Pinned",
   "message.snooze": "Snoozed",
   "message.set_aside": "Set aside",
@@ -44,6 +56,7 @@ const ACTIONS: Record<string, string> = {
   "sender.block": "Blocked a sender",
   "account.set_agent_access": "Tried to change what agents may do",
   "agent.activity": "Tried to read this list",
+  "server.status": "Checked what the mail server has",
   "hold.get": "Checked on what it asked for",
 };
 
@@ -230,6 +243,17 @@ export function AgentActivity({
   );
   const emailOf = (id: string | null) => accounts.find((account) => account.id === id)?.email ?? null;
 
+  // The time left to undo counts down while something shown can still be undone.
+  const [now, setNow] = useState(() => Date.now());
+  const counting = (entries ?? []).some((entry) => entry.undoable && (entry.undo_until ?? 0) > now);
+  useEffect(() => {
+    if (!counting) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    const timer = window.setInterval(tick, TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [counting]);
+
   return (
     <section className="agent-activity" aria-label={t("Agent activity")}>
       <div className="activity-head">
@@ -281,6 +305,7 @@ export function AgentActivity({
               entries={group.entries}
               emailOf={accounts.length > 1 ? emailOf : () => null}
               folderName={folderName}
+              now={now}
               onChanged={refresh}
             />
           ))}
@@ -300,12 +325,14 @@ function Session({
   entries,
   emailOf,
   folderName,
+  now,
   onChanged,
 }: {
   client: string;
   entries: Entry[];
   emailOf: (id: string | null) => string | null;
   folderName: (mailboxId: number) => string | null;
+  now: number;
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -329,7 +356,7 @@ function Session({
       </div>
       <ul className="activity-entries">
         {shown.map((entry) => (
-          <Row key={entry.id} entry={entry} email={emailOf(entry.account_id)} folderName={folderName} onChanged={onChanged} />
+          <Row key={entry.id} entry={entry} email={emailOf(entry.account_id)} folderName={folderName} now={now} onChanged={onChanged} />
         ))}
       </ul>
       {entries.length > FOLDED && (
@@ -345,16 +372,19 @@ function Row({
   entry,
   email,
   folderName,
+  now,
   onChanged,
 }: {
   entry: Entry;
   email: string | null;
   folderName: (mailboxId: number) => string | null;
+  /** The time the countdown is at. */
+  now: number;
   onChanged: () => void;
 }) {
   const decision = decisionOf(entry);
-  // What was done about it here: undone, or why that failed.
-  const [done, setDone] = useState<string | null>(null);
+  // What was done about it here: undone (or nothing left to undo), or why that failed.
+  const [done, setDone] = useState<{ label: string; tone: string } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const before = Array.isArray(entry.before)
@@ -363,23 +393,40 @@ function Row({
       ? [entry.before as Record<string, unknown>]
       : [];
 
-  const act = (label: string, work: () => Promise<unknown>) => (event: { preventDefault: () => void; stopPropagation: () => void }) => {
+  // Until when it can be undone; a daemon that does not say leaves only the button.
+  const until = entry.undo_until ?? null;
+  const reversible = entry.undo_id !== null;
+  const open = reversible && entry.undoable && (until === null || until > now);
+  // Why it no longer can be: it was undone, or its time ended (here, or as the daemon says).
+  const over = !reversible || open ? null : entry.undo_state === "used" ? "used" : entry.undoable || entry.undo_state === "expired" ? "expired" : "unknown";
+
+  const undo = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
     // Inside the row's summary: act, without opening the details.
     event.preventDefault();
     event.stopPropagation();
     setBusy(true);
     setProblem(null);
-    work()
+    applyUndo(entry.undo_id ?? 0)
       .then(
-        () => {
-          setDone(label);
+        (result) => {
+          const skipped = result.skipped ?? 0;
+          if (result.undone > 0 && skipped > 0) {
+            // Part of it came back: say how much did not, not a plain "Undone".
+            setDone({ label: t("Undone in part"), tone: "held" });
+            setProblem(tn(skipped, "1 change could not be put back.", "{count} changes could not be put back."));
+          } else if (result.undone > 0) {
+            setDone({ label: t("Undone"), tone: "approved" });
+          } else {
+            // The undo ran and found nothing it could set back: say so, not "Undone".
+            setDone({ label: t("Nothing to undo"), tone: "held" });
+            setProblem(t("Nothing was set back: what it changed has since been changed again, moved or deleted for good."));
+          }
           onChanged();
         },
         (failure: unknown) => setProblem(String(failure)),
       )
       .finally(() => setBusy(false));
   };
-  const undo = act("Undone", () => applyUndo(entry.undo_id ?? 0));
 
   return (
     <li className="activity-entry">
@@ -391,11 +438,27 @@ function Row({
           {decision && <span className={`chip activity-decision ${decision.tone}`}>{decision.label}</span>}
           {!decision && entry.error && <span className="chip activity-decision refused">{t("Failed")}</span>}
           {done ? (
-            <span className="chip activity-decision approved">{done}</span>
-          ) : entry.undoable && entry.undo_id !== null ? (
-            <button type="button" className="activity-undo" onClick={undo} disabled={busy}>
-              {t("Undo")}
-            </button>
+            <span className={`chip activity-decision ${done.tone}`}>{done.label}</span>
+          ) : open ? (
+            <>
+              {until !== null && (
+                <span
+                  className={until - now < 60_000 ? "activity-left soon" : "activity-left"}
+                  title={t("Can be undone until {when}", { when: fullDate(until) })}
+                >
+                  {undoLeft(until, now)}
+                </span>
+              )}
+              <button type="button" className="activity-undo" onClick={undo} disabled={busy}>
+                {t("Undo")}
+              </button>
+            </>
+          ) : over === "used" ? (
+            <span className="chip activity-decision approved">{t("Undone")}</span>
+          ) : over === "expired" ? (
+            <span className="activity-left">{t("Undo expired")}</span>
+          ) : over === "unknown" ? (
+            <span className="activity-left">{t("Can no longer be undone")}</span>
           ) : null}
         </summary>
         {problem && <p className="error activity-problem" role="alert">{problem}</p>}
