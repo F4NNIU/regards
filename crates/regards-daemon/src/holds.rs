@@ -255,8 +255,12 @@ pub(crate) async fn approve(state: &Arc<State>, params: HoldApproveParams) -> Re
         return Err(not_waiting(state, id).await);
     };
     let outcome = run(state, &hold, params.text).await;
-    if let Err(error) = &outcome {
-        tracing::info!(hold = id, error = %error.message, "an approved request could not run");
+    match &outcome {
+        // An agent's change, though approved: undoable for a day like its others.
+        Ok(result) => {
+            actions::keep_undo_for_agent(state, result).await;
+        }
+        Err(error) => tracing::info!(hold = id, error = %error.message, "an approved request could not run"),
     }
     let outcome = outcome.map(|result| result.to_string()).map_err(|error| error.message);
     state

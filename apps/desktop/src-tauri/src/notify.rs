@@ -134,7 +134,7 @@ pub(crate) async fn run(app: AppHandle) {
         app.state::<Notifier>().wake.notified().await;
         tokio::time::sleep(SETTLE).await;
         if let Err(error) = show_new(&app).await {
-            eprintln!("notifications: {error}");
+            crate::applog::app_log!("notifications: {error}");
         }
     }
 }
@@ -173,7 +173,7 @@ async fn show_new(app: &AppHandle) -> Result<(), String> {
             .collect();
         for shown in texts(&notices, &mail) {
             if let Err(error) = show(app, shown) {
-                eprintln!("notification: {error}");
+                crate::applog::app_log!("notification: {error}");
             }
         }
     }

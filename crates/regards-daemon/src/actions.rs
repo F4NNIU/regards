@@ -537,14 +537,79 @@ async fn mark_messages(
 /// Undo entries last this long; the app offers undo for the first seconds.
 const UNDO_FOR_MS: i64 = 10 * 60 * 1000;
 
+/// What an agent did can be undone for this long: the person may only look
+/// at it hours later (ADR-0012).
+const AGENT_UNDO_FOR_MS: i64 = 24 * 60 * 60 * 1000;
+
+/// An agent's change gave `result`: keep its undo, if it has one, for a day
+/// instead of minutes. Returns the undo's id.
+pub(crate) async fn keep_undo_for_agent(state: &State, result: &Value) -> Option<i64> {
+    let id = result.get("undo")?.get("id")?.as_i64()?;
+    let until = now_ms() + AGENT_UNDO_FOR_MS;
+    if let Err(error) = state.store.write_quiet(move |tx| undo::keep_until(tx, id, until)).await {
+        tracing::warn!(%error, "an agent's change keeps the short undo");
+    }
+    Some(id)
+}
+
 /// A mark to put back on undo: account, Message-ID, which mark, what it was.
 type MarkUndo = (String, String, Mark, Option<i64>);
+
+/// A message moved, as undo finds it again: its id then, its Message-ID,
+/// the folder it went to.
+type MoveSeen = (i64, String, i64);
+
+/// Where each message of `inverse` (id, folder it was in) went by `requests`
+/// (id, target), for those with a Message-ID.
+fn moves_seen(
+    tx: &rusqlite::Transaction<'_>,
+    inverse: &[(i64, i64)],
+    requests: &[(i64, i64)],
+) -> Result<Vec<MoveSeen>, StoreError> {
+    let mut seen = Vec::new();
+    for (id, _) in inverse {
+        let target = requests
+            .iter()
+            .find(|(moved, _)| moved == id)
+            .map(|(_, target)| *target);
+        let message_id = messages::get(tx, *id)?.and_then(|message| message.message_id);
+        if let (Some(target), Some(message_id)) = (target, message_id) {
+            seen.push((*id, message_id, target));
+        }
+    }
+    Ok(seen)
+}
+
+/// The message `id` as it is now, to move it back: itself while it is
+/// there, or, renumbered by a move the server made without saying where
+/// to, the one with its Message-ID in the folder it went to. `None`: gone.
+fn message_now(tx: &rusqlite::Transaction<'_>, id: i64, moved: &[MoveSeen]) -> Result<Option<i64>, StoreError> {
+    let known = moved.iter().find(|(was, _, _)| *was == id);
+    // Ids are given again once a message is gone: `id` may by now be another message.
+    let same = |message: &messages::Message| {
+        known.is_none_or(|(_, message_id, _)| message.message_id.as_deref() == Some(message_id.as_str()))
+    };
+    if messages::get(tx, id)?.is_some_and(|message| !message.flags.deleted && same(&message)) {
+        return Ok(Some(id));
+    }
+    let Some((_, message_id, went_to)) = known else {
+        return Ok(None);
+    };
+    Ok(regards_store::labels::copies_in(tx, *went_to, message_id)?
+        .first()
+        .map(|(now, _)| *now))
+}
 
 /// What reverses a set of moves: put each message (id) back where it was seen (folder id).
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct Inverse {
     #[serde(default)]
     moves: Vec<(i64, i64)>,
+    /// For each message moved, where it went. Without COPYUID the server
+    /// gives no new UID, so the message comes back from a sync as a new one
+    /// (another id): undo then finds it there by its Message-ID.
+    #[serde(default)]
+    moved: Vec<MoveSeen>,
     /// Marks to put back: account, Message-ID, which mark, what it was.
     #[serde(default)]
     marks: Vec<MarkUndo>,
@@ -832,6 +897,7 @@ async fn run_moves(
                     format!("{done} ({moved} messages)")
                 };
                 let inverse = serde_json::to_string(&Inverse {
+                    moved: moves_seen(tx, &inverse, &requests)?,
                     moves: inverse,
                     marks,
                     ..Inverse::default()
@@ -864,11 +930,23 @@ pub(crate) async fn apply_undo(state: &Arc<State>, params: UndoParams) -> Result
             };
             let inverse: Inverse =
                 serde_json::from_str(&inverse).map_err(|error| StoreError::Corrupt(format!("undo entry: {error}")))?;
-            // Messages that have since gone (moved without COPYUID, or deleted) are skipped.
+            // Everything it set out to put back, to say what could not be.
+            let wanted = inverse.moves.len()
+                + inverse.marks.len()
+                + inverse.unblock.len()
+                + inverse.flags.len()
+                + inverse.notes_added.len()
+                + inverse.notes_removed.len()
+                + inverse.drafts_deleted.len()
+                + inverse.labels_added.len()
+                + inverse.labels_removed.len();
+            // An agent's change: its activity says the person undid it.
+            regards_store::audit::undone(tx, id, now)?;
+            // Messages that have since gone (deleted, or moved on elsewhere) are skipped.
             let mut present = Vec::new();
             for (message, folder) in inverse.moves {
-                if messages::get(tx, message)?.is_some_and(|m| !m.flags.deleted) {
-                    present.push((message, folder));
+                if let Some(now_id) = message_now(tx, message, &inverse.moved)? {
+                    present.push((now_id, folder));
                 }
             }
             let (moved, _, accounts) = plan_moves(tx, &present, now)?;
@@ -910,18 +988,16 @@ pub(crate) async fn apply_undo(state: &Arc<State>, params: UndoParams) -> Result
             let (labels, label_accounts) =
                 crate::labels::undo(tx, &inverse.labels_added, &inverse.labels_removed, now)?;
             accounts.extend(label_accounts);
-            Ok((
-                moved + inverse.marks.len() + inverse.unblock.len() + flags.len() + notes + drafts + labels,
-                accounts,
-            ))
+            let undone = moved + inverse.marks.len() + inverse.unblock.len() + flags.len() + notes + drafts + labels;
+            Ok((undone, wanted.saturating_sub(undone), accounts))
         })
         .await
         .map_err(conflict)?;
-    let (undone, accounts) = committed.value;
+    let (undone, skipped, accounts) = committed.value;
     for account in accounts {
         state.queue.wake(state, &account);
     }
-    Ok(json!(UndoResult { undone }))
+    Ok(json!(UndoResult { undone, skipped }))
 }
 
 /// Moved messages no longer count as come back to the inbox, nor as
@@ -1090,6 +1166,7 @@ pub(crate) async fn block(state: &Arc<State>, params: SenderBlockParams) -> Resu
             let marks = leave_the_inbox(tx, &inverse)?;
             let description = format!("Blocked {key}");
             let inverse = serde_json::to_string(&Inverse {
+                moved: moves_seen(tx, &inverse, &requests)?,
                 moves: inverse,
                 marks,
                 unblock: vec![(account_id.clone(), key.clone())],
@@ -1209,5 +1286,147 @@ mod tests {
         let neither = [folder(6, "INBOX", Some(Role::Inbox))];
         assert!(destination(&neither, Role::Archive).is_none());
         assert!(destination(&gmail, Role::Junk).is_none(), "only archiving falls back");
+    }
+
+    /// A store with one account: an inbox holding message "a@x" (UID 1),
+    /// and an archive, both synced. Returns the store and the ids of the
+    /// inbox, the archive and the message.
+    async fn inbox_and_archive(temp: &tempfile::TempDir) -> (regards_store::Store, i64, i64, i64) {
+        use regards_core::paths::DataDirs;
+        use regards_store::accounts::{self, AuthKind, NewAccount, Security, Server};
+        use regards_store::mailboxes::{RemoteMailbox, SyncPoint};
+        let store = regards_store::Store::open(&DataDirs::at(temp.path())).await.unwrap();
+        let ids = store
+            .write(|tx| {
+                let server = Server {
+                    host: "imap.example.test".into(),
+                    port: 993,
+                    security: Security::Tls,
+                };
+                accounts::insert(
+                    tx,
+                    NewAccount {
+                        id: "a".into(),
+                        display_name: "Ada".into(),
+                        email: "ada@example.test".into(),
+                        auth_kind: AuthKind::Password,
+                        username: "ada".into(),
+                        secret_key: "k".into(),
+                        imap: server.clone(),
+                        smtp: server,
+                        imap_capabilities: vec!["IMAP4rev1".into(), "MOVE".into()],
+                    },
+                )?;
+                let remote = |name: &str, role| RemoteMailbox {
+                    remote_name: name.as_bytes().to_vec(),
+                    name: name.into(),
+                    delimiter: Some('/'),
+                    role: Some(role),
+                    selectable: true,
+                    attributes: vec![],
+                };
+                mailboxes::reconcile(
+                    tx,
+                    "a",
+                    &[remote("INBOX", Role::Inbox), remote("Archive", Role::Archive)],
+                )?;
+                let folders = mailboxes::list(tx, "a")?;
+                let id_of = |role| folders.iter().find(|folder| folder.role == Some(role)).unwrap().id;
+                let (inbox, archive) = (id_of(Role::Inbox), id_of(Role::Archive));
+                for folder in [inbox, archive] {
+                    mailboxes::set_sync_point(
+                        tx,
+                        folder,
+                        SyncPoint {
+                            uid_validity: 1,
+                            uid_next: None,
+                            highest_modseq: None,
+                            synced_at: 0,
+                        },
+                    )?;
+                }
+                messages::upsert(tx, inbox, &[seen_on_server(1, "a@x")])?;
+                let message = messages::by_uids(tx, inbox, &[1])?[0].id;
+                Ok((inbox, archive, message))
+            })
+            .await
+            .unwrap()
+            .value;
+        (store, ids.0, ids.1, ids.2)
+    }
+
+    /// The message `message_id` as a sync reads it at `uid`.
+    fn seen_on_server(uid: u32, message_id: &str) -> messages::NewMessage {
+        messages::NewMessage {
+            uid,
+            modseq: Some(u64::from(uid)),
+            flags: messages::MessageFlags::default(),
+            received_at: Some(1_000),
+            size: Some(100),
+            headers: regards_core::headers::Headers {
+                subject: "Plot rota".into(),
+                message_id: Some(message_id.into()),
+                ..regards_core::headers::Headers::default()
+            },
+        }
+    }
+
+    #[tokio::test]
+    async fn undo_finds_a_message_the_server_moved_without_saying_where_to() {
+        let temp = tempfile::tempdir().unwrap();
+        let (store, inbox, archive, message) = inbox_and_archive(&temp).await;
+        // Archived here: the move is queued, and where the message went is kept.
+        let (inverse, moved) = store
+            .write(move |tx| {
+                let requests = [(message, archive)];
+                let (count, inverse, _) = plan_moves(tx, &requests, 10)?;
+                assert_eq!(count, 1);
+                let moved = moves_seen(tx, &inverse, &requests)?;
+                Ok((inverse, moved))
+            })
+            .await
+            .unwrap()
+            .value;
+        assert_eq!(inverse, [(message, inbox)]);
+        assert_eq!(moved, [(message, "a@x".to_owned(), archive)]);
+
+        // The server moves it and gives no new UID (no COPYUID): the row
+        // goes, and the next sync of the archive brings it as a new one.
+        let renumbered = store
+            .write(move |tx| {
+                assert_eq!(
+                    message_now(tx, message, &moved)?,
+                    Some(message),
+                    "while it is still here"
+                );
+                messages::complete_move(tx, inbox, archive, &[1], None)?;
+                assert_eq!(message_now(tx, message, &moved)?, None, "not synced back yet");
+                // Its id is given to the next message stored: that one is not it.
+                messages::upsert(tx, inbox, &[seen_on_server(2, "b@x")])?;
+                assert_eq!(
+                    messages::by_uids(tx, inbox, &[2])?[0].id,
+                    message,
+                    "the id, given again"
+                );
+                assert_eq!(message_now(tx, message, &moved)?, None, "another message");
+                messages::upsert(tx, archive, &[seen_on_server(7, "a@x")])?;
+                let renumbered = messages::by_uids(tx, archive, &[7])?[0].id;
+                assert_ne!(renumbered, message);
+                assert_eq!(message_now(tx, message, &moved)?, Some(renumbered));
+
+                // Undo then moves that one back to the inbox.
+                let (count, _, _) = plan_moves(tx, &[(renumbered, inbox)], 20)?;
+                assert_eq!(count, 1);
+                Ok(renumbered)
+            })
+            .await
+            .unwrap()
+            .value;
+        let back = store
+            .read(move |conn| messages::get(conn, renumbered))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(back.moving_to, Some(inbox));
     }
 }

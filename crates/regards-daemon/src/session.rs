@@ -192,11 +192,12 @@ impl Session {
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .take();
-            // What reverses it, when it changed something that can be undone.
-            let undo_id = outcome
-                .as_ref()
-                .ok()
-                .and_then(|result| result.get("undo")?.get("id")?.as_i64());
+            // What reverses it, when it changed something that can be undone:
+            // kept for a day, since the person may look at it hours later.
+            let undo_id = match &outcome {
+                Ok(result) => actions::keep_undo_for_agent(&self.state, result).await,
+                Err(_) => None,
+            };
             let answered = audit::Answered {
                 session,
                 client,

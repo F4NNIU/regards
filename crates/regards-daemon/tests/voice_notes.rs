@@ -262,6 +262,34 @@ async fn agents_keep_notes_risky_ones_wait_and_every_one_can_be_undone() {
             ("Prefers calls before 10:00.".to_owned(), NoteAuthor::Agent),
         ]
     );
+    // What an agent did can be undone for a day, not minutes: the person may look hours later.
+    let activity: regards_ipc::protocol::AgentActivityResult = desktop
+        .call(
+            methods::AGENT_ACTIVITY,
+            regards_ipc::protocol::AgentActivityParams::default(),
+        )
+        .await
+        .unwrap();
+    let added = activity
+        .entries
+        .iter()
+        .find(|entry| entry.undo_id == theirs.undo.as_ref().map(|undo| undo.id))
+        .expect("the note the agent added");
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as i64;
+    let hour = 60 * 60 * 1000;
+    let until = added.undo_until.expect("it can be undone");
+    assert!(added.undoable);
+    assert_eq!(added.undo_state, Some(regards_ipc::protocol::UndoState::Open));
+    let added_id = added.id;
+    assert!(
+        (now + 23 * hour..=now + 24 * hour).contains(&until),
+        "undoable for {} min",
+        (until - now) / 60_000
+    );
+
     let undone: Value = desktop
         .call(
             methods::UNDO_APPLY,
@@ -271,8 +299,24 @@ async fn agents_keep_notes_risky_ones_wait_and_every_one_can_be_undone() {
         )
         .await
         .unwrap();
-    assert_eq!(undone["undone"], 1);
+    assert_eq!(
+        (&undone["undone"], &undone["skipped"]),
+        (&Value::from(1), &Value::from(0))
+    );
     assert_eq!(notes_about(&mut desktop, &account.id, anna).await.len(), 1);
+    // The activity says the person undid it, not that its undo ran out.
+    let activity: regards_ipc::protocol::AgentActivityResult = desktop
+        .call(
+            methods::AGENT_ACTIVITY,
+            regards_ipc::protocol::AgentActivityParams::default(),
+        )
+        .await
+        .unwrap();
+    let added = activity.entries.iter().find(|entry| entry.id == added_id).unwrap();
+    assert_eq!(
+        (added.undoable, added.undo_state),
+        (false, Some(regards_ipc::protocol::UndoState::Used))
+    );
 
     // Agents remove only agents' notes; a removed note can be put back.
     let refused = refusal(

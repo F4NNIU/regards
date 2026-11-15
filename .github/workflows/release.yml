@@ -68,15 +68,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Named versions, not -latest: what builds a release changes when we
+        # change it here, like the actions. Bump them like any dependency.
         include:
           - name: Windows x64
-            os: windows-latest
+            os: windows-2025
             target: x86_64-pc-windows-msvc
           - name: macOS Apple silicon
-            os: macos-latest
+            os: macos-26
             target: aarch64-apple-darwin
           - name: macOS Intel
-            os: macos-latest
+            os: macos-26
             target: x86_64-apple-darwin
           # The oldest supported Ubuntu, so the packages run on more systems.
           - name: Linux x64

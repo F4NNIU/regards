@@ -987,11 +987,29 @@ pub struct AgentActivity {
     #[serde(default)]
     pub before: Option<Value>,
     /// What reverses that change ([`methods::UNDO_APPLY`]), and whether it
-    /// still can (undo lasts ten minutes, and once).
+    /// still can (what an agent did can be undone for a day, and once).
     #[serde(default)]
     pub undo_id: Option<i64>,
     #[serde(default)]
     pub undoable: bool,
+    /// Until when it can be undone (ms since the epoch), while it can.
+    #[serde(default)]
+    pub undo_until: Option<i64>,
+    /// What became of that undo; `None` when the change had none.
+    #[serde(default)]
+    pub undo_state: Option<UndoState>,
+}
+
+/// What became of the undo of an agent's change.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UndoState {
+    /// It can still be undone (`undoable`).
+    Open,
+    /// The person undid it.
+    Used,
+    /// It was not undone in time.
+    Expired,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -1520,8 +1538,13 @@ pub struct UndoParams {
 /// Result of [`methods::UNDO_APPLY`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UndoResult {
-    /// Messages put back.
+    /// What was put back: messages moved, marks, flags, labels, notes, drafts.
     pub undone: usize,
+    /// What could not be put back: a message gone from the server, a label
+    /// deleted since, or a flag or label changed again since (that is the
+    /// person's, and stays).
+    #[serde(default)]
+    pub skipped: usize,
 }
 
 /// Parameters of [`methods::MESSAGE_PIN`].
