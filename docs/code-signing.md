@@ -7,7 +7,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 ## What is signed
 
 On Windows:
-- the installer, `Regards_<version>_x64-setup.exe`;
+- the installers, `Regards_<version>_x64-setup.exe` and `Regards_<version>_arm64-setup.exe`;
 - the programs it installs: the app (`regards-desktop.exe`) and the `regards` program (the daemon, the CLI and the MCP server).
 
 They are signed only when they come from this repository:
@@ -16,7 +16,7 @@ They are signed only when they come from this repository:
 
 The macOS and Linux builds are not signed (see [releasing](releasing.md)).
 
-**Checking a download:** right-click the installer › *Properties* › *Digital Signatures*. The signer is *SignPath Foundation*.
+**Checking a download:** right-click the installer › *Properties* › *Digital Signatures*. The signer is *SignPath Foundation*. On any system, signed or not, a download can also be checked against the record of where it was built ([releasing](releasing.md#checking-where-a-download-was-built)).
 
 ## Team roles
 

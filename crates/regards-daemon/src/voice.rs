@@ -107,6 +107,7 @@ pub(crate) async fn held(
         subject: description.clone(),
         description,
         draft: None,
+        send: None,
         people: Vec::new(),
     })
 }

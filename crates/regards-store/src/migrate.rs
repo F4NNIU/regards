@@ -53,6 +53,8 @@ const MIGRATIONS: &[M<'static>] = &[
     M::up(include_str!("../migrations/0042_snooze_quiet.sql")),
     M::up(include_str!("../migrations/0043_priority_conversation.sql")),
     M::up(include_str!("../migrations/0044_calendar_method.sql")),
+    M::up(include_str!("../migrations/0045_undo_outcome.sql")),
+    M::up(include_str!("../migrations/0046_agent_sends.sql")),
 ];
 
 /// Backups kept before older ones are deleted.
@@ -343,5 +345,39 @@ mod tests {
             conn.prepare("SELECT signature FROM identities").is_err(),
             "the old column is gone"
         );
+    }
+
+    #[test]
+    fn undo_ids_are_kept_and_never_given_again() {
+        let temp = tempfile::tempdir().unwrap();
+        let backups = temp.path().join("backups");
+        let mut conn = Connection::open(temp.path().join("mail.db")).unwrap();
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        run(&Migrations::from_slice(&MIGRATIONS[..44]), &mut conn, &backups).unwrap();
+        // One undo still open, and an agent's activity naming a later one that is gone.
+        conn.execute_batch(
+            "INSERT INTO undo_log (id, created_at, expires_at, description, inverse) VALUES (3, 1, 9, 'Archived', '{}'); \
+             INSERT INTO agent_audit (at, session, client, method, args, decision, duration_ms, undo_id) \
+             VALUES (1, 's', 'mcp', 'message.archive', '{}', 'allowed', 1, 7);",
+        )
+        .unwrap();
+
+        to_latest(&mut conn, &backups).unwrap();
+        let kept: (i64, String) = conn
+            .query_row("SELECT id, description FROM undo_log", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(kept, (3, "Archived".to_owned()), "the open undo, as it was");
+        conn.execute(
+            "INSERT INTO undo_log (created_at, expires_at, description, inverse) VALUES (2, 9, 'Pinned', '{}')",
+            [],
+        )
+        .unwrap();
+        assert_eq!(conn.last_insert_rowid(), 8, "after the one the activity names");
+        let undone_at: Option<i64> = conn
+            .query_row("SELECT undone_at FROM agent_audit", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(undone_at, None);
     }
 }

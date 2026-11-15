@@ -10,8 +10,10 @@ In Regards, open **Settings › Agents** and set each account:
 | --- | --- |
 | Off (default) | Nothing: they do not see the account |
 | Read | List, search and read mail, your voice and notes about people. Reading never marks it read |
-| Triage | Read, and organise (archive, move, flag, pin, snooze, sort senders), write drafts, keep notes about people and suggest a voice |
+| Triage | Read, and organise (archive, move, label, flag, pin, snooze, sort senders), write drafts, keep notes about people and suggest a voice |
 | Send | Triage, and ask to send |
+
+Labels are for Gmail accounts, where a label is one of your own folders. On other accounts, agents file mail by moving it to a folder.
 
 Only you can change these, in the app. Agents cannot change them.
 
@@ -22,6 +24,7 @@ To stop every agent at once, turn agents off in Settings › Agents. While they 
 - **Every send**, unless you chose an undo window for the account:
   - **By default:** an agent's `send` waits in Settings › Agents. You see the draft there, and approve or reject it. Regards sends exactly what you saw: if the draft changes after it was held, it is not sent on that approval.
   - **With an undo window** (Settings › Agents, per account, 10 seconds to 10 minutes): the message waits in the Outbox for that long, and you are told. You can call it back there before it goes; the agent cannot. More than 20 such sends in an hour wait for your approval again.
+  - **The same message asked twice** (same recipients, subject and text within a day, as when an agent's run starts over): the second request says so, with what became of the first, and it always waits for your approval, even with an undo window.
 - **Changing more than 50 messages at once.**
 - **Deleting for good.**
 - **A suggested voice**: you see it, and approve it, edit it first, or reject it.
@@ -31,7 +34,9 @@ You get a notification. A request you do not decide within a day expires.
 
 ## 3. See and undo what agents did
 
-Settings › Agents lists every request an agent made, allowed or refused, with what it changed. Changes can be undone there for ten minutes.
+Settings › Agents lists every request an agent made, allowed or refused, with what it changed. Changes can be undone there for a day. Each row shows how long is left, then whether the change was undone or its time ended. If an undo cannot put everything back (a message gone from the server, or something you changed again since), the row says how many changes it left.
+
+A change is made in Regards at once, and sent to your mail server right after. An agent can ask what the server has not been told yet, and what it refused (`regards pending`): a refused change is dropped, and the message shows as it is on the server again.
 
 ## 4. Connect your agent
 
@@ -41,7 +46,8 @@ The easiest way is in Regards: **Connect** beside an agent in the Agents menu, o
 - **Claude app:** add Regards to its settings file, then restart it.
 - **Cursor:** **Add to Cursor** asks Cursor to add Regards as an MCP server; you confirm there.
 - **Codex:** run `codex mcp add regards -- regards mcp`.
-- **Other agents:** the same request as Claude Code, or `regards mcp` as an MCP server.
+- **LM Studio** (a model on your own computer): **Add to LM Studio** asks LM Studio to add Regards as an MCP server; you confirm there. Load a model that can use tools (LM Studio marks them with a hammer): small models often get tool calls wrong.
+- **Other agents:** the same request as Claude Code, or `regards mcp` as an MCP server. Jan and Goose, which also run models on your computer, take it that way (Jan: **Settings › MCP Servers**; Goose: `goose configure`, **Add Extension**). Ollama serves a model but does not connect to MCP servers by itself: use it through such an app.
 
 The tab **On this computer** lists the agents found here; each says **Active** once Regards is set up in it. The dialog checks again every few seconds, so you see it turn active.
 
@@ -69,7 +75,7 @@ Agents use it in either of two ways.
   args = ["mcp"]
   ```
 
-- Cursor, in `~/.cursor/mcp.json`:
+- Cursor, in `~/.cursor/mcp.json`, and LM Studio, in its `mcp.json` (**Program** tab, **Install › Edit mcp.json**):
 
   ```json
   { "mcpServers": { "regards": { "command": "regards", "args": ["mcp"] } } }
@@ -94,7 +100,7 @@ The **Agents** button at the foot of the sidebar opens two tabs:
   - **Copy to the clipboard**, for any other agent.
 
   Nothing is sent until you send it in the agent. Regards itself sends nothing to any AI.
-- **Agents:** the agent apps Regards found on this computer, by their settings folders (`~/.claude`, `~/.codex`, `~/.cursor`, the Claude app's). One is marked **Active** once Regards is set up in it (the skill from `regards skill --install` is in its skills folder, or `regards` is one of its MCP servers) or while it is connected; otherwise it has **Connect**, which opens the Connect dialog on its card (§ 4). Regards only looks: it changes nothing in those folders. When it finds none, it lists them all.
+- **Agents:** the agent apps Regards found on this computer, by their settings folders (`~/.claude`, `~/.codex`, `~/.cursor`, `~/.lmstudio`, the Claude app's). One is marked **Active** once Regards is set up in it (the skill from `regards skill --install` is in its skills folder, or `regards` is one of its MCP servers) or while it is connected; otherwise it has **Connect**, which opens the Connect dialog on its card (§ 4). Regards only looks: it changes nothing in those folders. When it finds none, it lists them all.
 
 You can hide the button from its menu; Settings › Agents shows it again.
 

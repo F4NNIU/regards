@@ -84,7 +84,7 @@ pub(crate) async fn run(app: AppHandle) {
             match unread(&app, &choices).await {
                 Ok(count) => count,
                 Err(error) => {
-                    eprintln!("badge: {error}");
+                    crate::applog::app_log!("badge: {error}");
                     continue;
                 }
             }
@@ -158,7 +158,7 @@ fn show(app: &AppHandle, count: u32) {
     #[cfg(not(windows))]
     let shown = window.set_badge_count((count > 0).then_some(i64::from(count)));
     if let Err(error) = shown {
-        eprintln!("badge: {error}");
+        crate::applog::app_log!("badge: {error}");
     }
 }
 

@@ -4,7 +4,7 @@
     Regards
   </a>
   <nav class="nav" aria-label="Rubriques">
-    <a href="#agents">Agents IA</a><a href="#design">Design</a><a href="#open">Open source</a><a href="#systems">Télécharger</a><a href="https://github.com/lucienPochon/regards">GitHub</a>
+    <a href="#agents">Agents IA</a><a href="#design">Design</a><a href="#open">Open source</a><a href="#systems">Télécharger</a><a href="blog/">Blog</a><a href="https://github.com/lucienPochon/regards">GitHub</a>
   </nav>
   <span class="lang" aria-label="Langue"><a href="../" lang="en">EN</a><a href="#top" lang="fr" aria-current="true">FR</a></span>
   <a class="btn glow small" href="#systems">Télécharger</a>
@@ -42,7 +42,7 @@
     </div>
   </div>
 
-  <div class="strip"><div class="wrap"><span>Fonctionne avec</span><b>Claude Code</b><b>l’app Claude</b><b>Codex</b><b>Cursor</b><b>tout agent MCP</b></div></div>
+  <div class="strip"><div class="wrap"><span>Fonctionne avec</span><b>Claude Code</b><b>l’app Claude</b><b>Codex</b><b>Cursor</b><b>LM Studio</b><b>tout agent MCP</b></div></div>
 </div>
 
 <div class="trio"><div class="wrap">
@@ -68,7 +68,7 @@
     <span class="kick">Agents IA intégrés</span>
     <h2 class="big">Un agent qui <em>fait le travail,</em> au lieu de seulement résumer.</h2>
     <p class="t">Connectez l’agent que vous utilisez déjà : il gère chaque boîte que vous lui confiez. Vous fixez les règles, vous voyez tout ce qu’il a fait, et vous pouvez l’annuler.</p>
-    <div class="verbs"><span>lire</span><span>chercher</span><span>archiver</span><span>déplacer</span><span>marquer</span><span>épingler</span><span>reporter</span><span>trier les expéditeurs</span><span>rédiger des réponses</span><span>demander l’envoi</span></div>
+    <div class="verbs"><span>lire</span><span>chercher</span><span>archiver</span><span>déplacer</span><span>ajouter des libellés</span><span>marquer</span><span>épingler</span><span>reporter</span><span>trier les expéditeurs</span><span>rédiger des réponses</span><span>demander l’envoi</span></div>
     <div class="lv"><div><b>Désactivé</b>Ne voit rien</div><div><b>Lecture</b>Lit et cherche</div><div><b>Tri</b>Organise et rédige</div><div><b>Envoi</b>Envoie, une fois approuvé</div></div>
   </div>
   <div class="console rise" id="console">
@@ -192,7 +192,7 @@
   <div class="oses">
     <div class="osc" data-os="windows">
       <div class="scr"><div class="frame"><div class="bar2 win2"><span>Regards</span><u>–▢✕</u></div><div class="crop"><img src="{{root}}assets/app-light{{shots}}.png" alt="" width="1280" height="860"></div></div></div>
-      <div class="txt"><h3>Windows</h3><p>Windows 10 et 11</p><div class="fmt"><a href="{{dl_windows}}">installeur .exe</a></div><a class="btn primary small" href="{{dl_windows}}">Télécharger pour Windows</a></div>
+      <div class="txt"><h3>Windows</h3><p>Windows 10 et 11</p><div class="fmt"><a href="{{dl_windows}}">installeur .exe</a><a href="{{dl_windows_arm}}"{{dl_windows_arm_off}}>.exe ARM64</a></div><a class="btn primary small" href="{{dl_windows}}">Télécharger pour Windows</a></div>
     </div>
     <div class="osc" data-os="macos">
       <div class="scr"><div class="frame"><div class="bar2 mac"><i></i><i></i><i></i><span>Regards</span></div><div class="crop"><img src="{{root}}assets/app-dark{{shots}}.png" alt="" width="1280" height="860"></div></div></div>
@@ -200,7 +200,7 @@
     </div>
     <div class="osc" data-os="linux">
       <div class="scr"><div class="frame"><div class="bar2 lin"><span>Regards</span><i></i><i></i><i></i></div><div class="crop"><img src="{{root}}assets/app-light{{shots}}.png" alt="" width="1280" height="860"></div></div></div>
-      <div class="txt"><h3>Linux</h3><p>Pour la plupart des distributions</p><div class="fmt"><a href="{{dl_deb}}">.deb</a><a href="{{dl_rpm}}">.rpm</a><a href="{{dl_appimage}}">AppImage</a></div><a class="btn primary small" href="{{dl_appimage}}">Télécharger l’AppImage</a></div>
+      <div class="txt"><h3>Linux</h3><p>Pour la plupart des distributions</p><div class="fmt"><a href="{{dl_deb}}">.deb</a><a href="{{dl_rpm}}">.rpm</a><a href="{{dl_appimage}}">AppImage</a><a href="{{dl_deb_arm}}"{{dl_deb_arm_off}}>.deb ARM64</a><a href="{{dl_rpm_arm}}"{{dl_rpm_arm_off}}>.rpm ARM64</a><a href="{{dl_appimage_arm}}"{{dl_appimage_arm_off}}>AppImage ARM64</a></div><a class="btn primary small" href="{{dl_appimage}}">Télécharger l’AppImage</a></div>
     </div>
   </div>
   <p class="also">Vous préférez le compiler vous-même ? <a href="#open">Le code est ouvert.</a></p>
@@ -211,6 +211,6 @@
   <p>Regards {{version}} est gratuit et open source, pour Windows, macOS et Linux.</p>
   <div class="os"><a class="btn glow" href="{{dl_windows}}">Télécharger pour Windows</a><a class="btn line" href="#systems">macOS</a><a class="btn line" href="#systems">Linux</a></div>
   <p class="fine">Les installateurs ne sont pas encore signés : Windows et macOS affichent un avertissement la première fois. Sous Windows, choisissez <em>Informations complémentaires</em>, puis <em>Exécuter quand même</em>. <a href="https://github.com/lucienPochon/regards/blob/main/docs/code-signing.md">Politique de signature du code</a></p>
-  <div class="fl"><a href="https://github.com/lucienPochon/regards">GitHub</a><a href="#agents">Agents IA</a><a href="#open">Confidentialité</a><a href="#providers">E-mails pris en charge</a><span>Regards · Apache-2.0 ou MIT</span></div>
+  <div class="fl"><a href="https://github.com/lucienPochon/regards">GitHub</a><a href="blog/">Blog</a><a href="#agents">Agents IA</a><a href="#open">Confidentialité</a><a href="#providers">E-mails pris en charge</a><span>Regards · Apache-2.0 ou MIT</span></div>
 </div></div>
 </main>

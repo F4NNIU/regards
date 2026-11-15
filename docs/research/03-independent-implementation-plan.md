@@ -471,6 +471,8 @@ flowchart LR
 - **As built (2026-10-19), daemon and API; screens to follow:**
   - **What it does, only when asked:** it summarises a conversation (what it is about, what was decided, what is asked and by when), or drafts a reply to a message, with optional "what I want to say". The reply goes into a draft above the signature and the quote, to review and send by hand. Nothing is ever sent, moved or changed because a model said so.
   - **Providers:** Anthropic's Messages API (`claude-opus-5-5` by default, with effort low for summaries and medium for replies), or any OpenAI-compatible chat completions server, hosted (`https://…/v1`) or on this computer (`http://localhost:11434/v1`; plain `http://` only to this computer).
+  - **A model on this computer is found by itself (2026-11-15):** `assistant.local_servers` asks the usual ports of Ollama (11434), LM Studio (1234) and llama.cpp (8080) on this computer for their list of models (`GET /v1/models`, 1.5 s at most), and returns the ones that answer with such a list. Settings › Assistant offers **Model on this computer** first: the server and its models are shown to pick from, with nothing to type. Nothing but this computer is asked, and only once the person picks that option.
+  - **Saving tests it:** `assistant.check` asks the saved model for one word, with no mail. Its result names the problem (`unreachable`, `key`, `not_found`, `busy`, `other`), so the screen can say "is the server running?" instead of failing at the first summary.
   - **Off by default.** It turns on when the person chooses a provider in Settings.
   - **The key** is kept in the OS credential store under `assistant/api-key`. It is never shown back, and it is kept for one origin: choosing another provider or server forgets it, so it never goes anywhere it was not given for.
   - **What goes:**
@@ -479,7 +481,7 @@ flowchart LR
     - Never a message that looks like it carries a sign-in or verification code. Those are left out, and asking about one is refused.
     - `assistant.preview` says how many messages and characters would go, how many were left out, and to which host and model, before `assistant.run` sends anything.
   - **Mail is data, not instructions:** each message goes between `<message>` tags (a tag inside its text is defused), and the instructions tell the model not to follow what the mail says. The answer is read as plain text: a refusal, a refused key, a busy provider or an unreadable answer each gets its own message.
-  - **Interfaces:** `assistant.settings`, `assistant.set_settings`, `assistant.preview` and `assistant.run`, `ui` only (agents have their own models). Bridged as Tauri commands, and `assistant.ts` in the app. The egress allow-list and `docs/privacy.md` name `api.anthropic.com`.
+  - **Interfaces:** `assistant.settings`, `assistant.set_settings`, `assistant.preview`, `assistant.run`, `assistant.local_servers` and `assistant.check`, `ui` only (agents have their own models). Bridged as Tauri commands, and `assistant.ts` in the app. The egress allow-list and `docs/privacy.md` name `api.anthropic.com`.
 
 ### 5.11 Agent gateway: CLI + MCP (P1, 1.0, ADR-0012)
 

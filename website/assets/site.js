@@ -14,6 +14,7 @@
   var tilt=document.getElementById('tilt'), scene=document.getElementById('scene'), tick=false;
   function frame(){
     tick=false;
+    if(!scene) return; // pages without the tilted window (the blog)
     var r=scene.getBoundingClientRect(), vh=innerHeight;
     var p=Math.min(1,Math.max(0,(vh*0.95-r.top)/(vh*0.75)));
     tilt.style.setProperty('--rx',(16*(1-p)).toFixed(2)+'deg');

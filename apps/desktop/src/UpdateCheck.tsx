@@ -4,7 +4,9 @@ import {
   type Update,
   type UpdateStatus,
   checkForUpdate,
+  installUpdate,
   onUpdateAvailable,
+  onUpdateProgress,
   openUpdate,
   setUpdateChecks,
   updateStatus,
@@ -31,13 +33,34 @@ export function useUpdateStatus() {
 
 const time = (at: number) => new Date(at).toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
 
-/** Settings › About: the version, checking automatically or not, Check now, and Download. */
+/** Settings › About: the version, checking automatically or not, Check now, and Install (or Download). */
 export function AboutUpdates() {
   const { status, setStatus } = useUpdateStatus();
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checked, setChecked] = useState<{ at: number; found: Update | null } | null>(null);
+  // Installing: null when not, else the part downloaded so far (0 to 100), if known.
+  const [installing, setInstalling] = useState<{ percent: number | null } | null>(null);
+  // Installing failed: the download is offered instead.
+  const [installFailed, setInstallFailed] = useState(false);
+  useEffect(() => {
+    const stop = onUpdateProgress(({ received, total }) =>
+      setInstalling({ percent: total ? Math.min(100, Math.floor((received / total) * 100)) : null }),
+    );
+    return () => void stop.then((unlisten) => unlisten()).catch(() => {});
+  }, []);
   if (!status) return null;
+
+  const install = () => {
+    setError(null);
+    setInstalling({ percent: null });
+    installUpdate().catch((failure: unknown) => {
+      setInstalling(null);
+      setInstallFailed(true);
+      setError(String(failure));
+    });
+  };
+  const download = () => void openUpdate().catch((failure: unknown) => setError(String(failure)));
 
   const choose = (on: boolean) => {
     setError(null);
@@ -109,9 +132,19 @@ export function AboutUpdates() {
                 })
               : t("Regards {version} is available.", { version: available.version })}
           </span>
-          <button type="button" className="btn small primary" onClick={() => void openUpdate().catch((failure: unknown) => setError(String(failure)))}>
-            {t("Download")}
-          </button>
+          {status.can_install && !installFailed ? (
+            <button type="button" className="btn small primary" onClick={install} disabled={installing !== null}>
+              {installing === null
+                ? t("Install and restart")
+                : installing.percent === null
+                  ? t("Downloading…")
+                  : t("Downloading… {percent} %", { percent: installing.percent })}
+            </button>
+          ) : (
+            <button type="button" className="btn small primary" onClick={download}>
+              {t("Download")}
+            </button>
+          )}
         </p>
       )}
     </section>

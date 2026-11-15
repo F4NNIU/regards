@@ -1323,6 +1323,30 @@ async fn live_a_label_is_a_copy_in_the_labels_folder() {
     assert_eq!(listed.messages[0].labels, [garden.id], "now from the synced copy");
     assert_eq!(messages(&mut desktop, garden.id).await.messages.len(), 1);
 
+    // Undone: the label goes again, here and on the server.
+    let undo = added.undo.expect("labelling can be undone");
+    assert_eq!(undo.description, "Labelled 1 message");
+    let undone: UndoResult = desktop
+        .call(methods::UNDO_APPLY, UndoParams { id: undo.id })
+        .await
+        .unwrap();
+    assert_eq!(undone.undone, 1);
+    let listed: LabelsResult = desktop
+        .call(methods::MESSAGE_LABELS, MessageIds { ids: vec![row.id] })
+        .await
+        .unwrap();
+    assert!(listed.messages[0].labels.is_empty(), "{listed:?}");
+    server_count_becomes(&mut seed, b"Garden", 0).await;
+    server_count_becomes(&mut seed, b"INBOX", 1).await;
+
+    // Labelled again, for what follows.
+    let _: SetLabelsResult = desktop
+        .call(methods::MESSAGE_SET_LABELS, set(vec![garden.id], vec![]))
+        .await
+        .unwrap();
+    server_count_becomes(&mut seed, b"Garden", 1).await;
+    sync(&mut desktop, &account.id).await;
+
     // Removed: the copy goes, the message stays where it was.
     let removed: SetLabelsResult = desktop
         .call(methods::MESSAGE_SET_LABELS, set(vec![], vec![garden.id]))
@@ -1332,6 +1356,28 @@ async fn live_a_label_is_a_copy_in_the_labels_folder() {
     assert_eq!(removed.gone.len(), 1, "the copy in Garden");
     server_count_becomes(&mut seed, b"Garden", 0).await;
     server_count_becomes(&mut seed, b"INBOX", 1).await;
+
+    // Undone: the label is back, copied from the message that stayed.
+    let undo = removed.undo.expect("removing a label can be undone");
+    assert_eq!(undo.description, "Removed a label from 1 message");
+    let undone: UndoResult = desktop
+        .call(methods::UNDO_APPLY, UndoParams { id: undo.id })
+        .await
+        .unwrap();
+    assert_eq!(undone.undone, 1);
+    let listed: LabelsResult = desktop
+        .call(methods::MESSAGE_LABELS, MessageIds { ids: vec![row.id] })
+        .await
+        .unwrap();
+    assert_eq!(listed.messages[0].labels, [garden.id]);
+    server_count_becomes(&mut seed, b"Garden", 1).await;
+
+    // Nothing changed: nothing to undo.
+    let same: SetLabelsResult = desktop
+        .call(methods::MESSAGE_SET_LABELS, set(vec![garden.id], vec![]))
+        .await
+        .unwrap();
+    assert!(same.undo.is_none());
 
     // The inbox is not a label.
     match desktop
@@ -3550,6 +3596,30 @@ async fn live_agents_organise_mail_and_the_app_undoes_it() {
     assert_eq!(marked.undo.as_ref().unwrap().description, "Flagged 1 message");
     assert_eq!(subjects(messages(&mut desktop, inbox).await), ["Invoice"]);
 
+    // Labels are Gmail's. On another server the copy in a folder may be the
+    // only one, so an agent files mail there with a move.
+    {
+        use regards_ipc::ClientError;
+        use regards_ipc::protocol::{SetLabelsParams, codes};
+        let labelled = agent
+            .call::<_, Value>(
+                methods::MESSAGE_SET_LABELS,
+                SetLabelsParams {
+                    ids: vec![id("Invoice")],
+                    add: vec![inbox],
+                    remove: vec![],
+                },
+            )
+            .await;
+        match labelled {
+            Err(ClientError::Rpc(error)) => {
+                assert_eq!(error.code, codes::CONFLICT);
+                assert!(error.message.contains("only Gmail accounts"), "{}", error.message);
+            }
+            other => panic!("expected a refusal, got {other:?}"),
+        }
+    }
+
     // The app sees what it did, how things stood, and undoes the archiving.
     let activity: AgentActivityResult = desktop
         .call(methods::AGENT_ACTIVITY, AgentActivityParams::default())
@@ -4429,6 +4499,119 @@ async fn live_attachments_can_be_shown_saved_and_opened() {
         desktop.call(methods::ATTACHMENT_OPEN, at(9)).await,
         regards_ipc::protocol::codes::NOT_FOUND,
     );
+
+    seed.logout().await;
+    handle.abort();
+}
+
+#[tokio::test]
+#[ignore = "needs a real IMAP server (REGARDS_TEST_IMAP, REGARDS_TEST_IMAP_CA)"]
+async fn live_an_agent_learns_what_the_server_has_and_what_it_refused() {
+    use regards_ipc::protocol::{
+        MailboxCreateParams, MailboxSummary, MoveParams, ServerChange, ServerStatusParams, ServerStatusResult,
+    };
+    let live = live();
+    let mut seed = Session::login(&live.server, &live.user, &live.password, &live.tls)
+        .await
+        .unwrap();
+    seed.create_mailbox(b"Archive").await.unwrap();
+    for (n, subject, from) in [(1, "Invoice", "billing@shop.example"), (2, "Lunch", "ann@example.test")] {
+        seed.append(b"INBOX", &[], &message(n, subject, from)).await.unwrap();
+    }
+    let smtp = ServerSettings {
+        host: live.server.host.clone(),
+        port: 587,
+        security: ConnectionSecurity::Starttls,
+    };
+    let ((_temp, mut desktop, account, inbox, handle), endpoint) =
+        daemon_reachable(&live, smtp, live.tls.clone(), |daemon| daemon).await;
+    let garden: MailboxSummary = desktop
+        .call(
+            methods::MAILBOX_CREATE,
+            MailboxCreateParams {
+                account_id: account.id.clone(),
+                parent_id: None,
+                name: "Garden".into(),
+            },
+        )
+        .await
+        .unwrap();
+    let _: Value = desktop
+        .call(
+            methods::ACCOUNT_SET_AGENT_ACCESS,
+            AgentAccessParams {
+                account_id: account.id.clone(),
+                access: AgentAccess::Triage,
+            },
+        )
+        .await
+        .unwrap();
+    let mut agent = Client::connect(&endpoint, ClientKind::Mcp).await.unwrap();
+    let listed = messages(&mut desktop, inbox).await;
+    let id = |subject: &str| listed.messages.iter().find(|m| m.subject == subject).unwrap().id;
+
+    /// What the agent is told, once `check` holds.
+    async fn status_becomes(agent: &mut Client, check: impl Fn(&ServerStatusResult) -> bool) -> ServerStatusResult {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            let status: ServerStatusResult = agent
+                .call(methods::SERVER_STATUS, ServerStatusParams::default())
+                .await
+                .unwrap();
+            if check(&status) {
+                return status;
+            }
+            assert!(Instant::now() < deadline, "the server's state stayed {status:?}");
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+    }
+
+    // Archived here at once; once the server has it, nothing waits and nothing was refused.
+    let _: MoveResult = agent
+        .call(methods::MESSAGE_ARCHIVE, MessageIds { ids: vec![id("Lunch")] })
+        .await
+        .unwrap();
+    server_count_becomes(&mut seed, b"Archive", 1).await;
+    let status = status_becomes(&mut agent, |status| status.waiting.is_empty()).await;
+    assert!(status.refused.is_empty(), "{status:?}");
+
+    // The folder goes on the server, unknown to Regards: a move there shows
+    // here at once, the server refuses it, and the agent is told which
+    // message it was. The message is back where the server has it.
+    seed.delete_mailbox(b"Garden").await.unwrap();
+    let _: MoveResult = agent
+        .call(
+            methods::MESSAGE_MOVE,
+            MoveParams {
+                ids: vec![id("Invoice")],
+                mailbox_id: garden.id,
+            },
+        )
+        .await
+        .unwrap();
+    let status = status_becomes(&mut agent, |status| !status.refused.is_empty()).await;
+    assert!(
+        status.waiting.is_empty(),
+        "a refused change is not tried again: {status:?}"
+    );
+    let refused = &status.refused[0];
+    assert_eq!(
+        (
+            refused.change,
+            refused.message_ids.as_slice(),
+            refused.account_id.as_str()
+        ),
+        (ServerChange::Move, &[id("Invoice")][..], account.id.as_str())
+    );
+    assert!(!refused.reason.is_empty());
+    let shown: Vec<String> = messages(&mut desktop, inbox)
+        .await
+        .messages
+        .into_iter()
+        .map(|m| m.subject)
+        .collect();
+    assert_eq!(shown, ["Invoice"]);
+    server_count_becomes(&mut seed, b"INBOX", 1).await;
 
     seed.logout().await;
     handle.abort();

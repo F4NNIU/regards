@@ -4,6 +4,7 @@ import {
   type AgentApp,
   type AgentsSettings,
   addToCursor,
+  addToLmStudio,
   agentAppsFound,
   agentsSettings,
   type CommandLine,
@@ -42,6 +43,7 @@ const LABELS: Record<ConnectId, string> = {
   "claude-app": "Claude app",
   codex: "Codex",
   cursor: "Cursor",
+  "lm-studio": "LM Studio",
   other: t("Other agents"),
 };
 
@@ -54,7 +56,7 @@ export function AgentMark({ id }: { id: ConnectId }) {
       </span>
     );
   }
-  const initials = { "claude-code": "CC", "claude-app": "C", codex: "Cx", cursor: "Cu" }[id];
+  const initials = { "claude-code": "CC", "claude-app": "C", codex: "Cx", cursor: "Cu", "lm-studio": "LM" }[id];
   return (
     <span className={`agent-mark ${id}`} aria-hidden="true">
       {initials}
@@ -245,6 +247,35 @@ export function ConnectDialog({
             </Step>
           </ol>
         );
+      case "lm-studio":
+        return (
+          <>
+            <ol className="connect-steps">
+              <Step n={1} title={t("Add Regards to LM Studio")}>
+                <p>{t("LM Studio opens and asks you to confirm adding Regards as one of its MCP servers.")}</p>
+                <div className="connect-actions">
+                  <button type="button" className="btn primary small" onClick={() => run(addToLmStudio())}>
+                    {t("Add to LM Studio")}
+                  </button>
+                </div>
+                <p>
+                  {t("Or, in LM Studio, open the Program tab in the right-hand sidebar, choose Install › Edit mcp.json, and put this in:")}
+                </p>
+                {copyBox("lm-studio", MCP_JSON)}
+              </Step>
+              <Step n={2} title={t("Load a model that can use tools")}>
+                <p>
+                  {t("Regards is reached through tool calls. Models with the hammer badge in LM Studio handle them best; small models often get them wrong.")}
+                </p>
+              </Step>
+              <Step n={3} title={t("Ask it")}>
+                <p>{t("Start a new chat and send this, to see the connection work.")}</p>
+                {copyBox("lm-studio-ask", FIRST_ASK)}
+              </Step>
+            </ol>
+            <p className="connect-lead">{t("With a model on this computer, your mail does not leave it.")}</p>
+          </>
+        );
       case "codex":
         return (
           <ol className="connect-steps">
@@ -270,6 +301,11 @@ export function ConnectDialog({
             <Step n={2} title={t("Or add Regards as an MCP server")}>
               <p>
                 {t("For agents that take MCP servers: the command")} <code>regards</code> {t("with the argument")} <code>mcp</code>{t(", over stdio.")}
+              </p>
+            </Step>
+            <Step n={3} title={t("With a model on this computer")}>
+              <p>
+                {t("Jan and Goose run models on this computer and take MCP servers: add the command regards with the argument mcp, in Jan under Settings › MCP Servers, in Goose with goose configure › Add Extension. Ollama serves the model; an app such as these connects it to Regards.")}
               </p>
             </Step>
           </ol>
@@ -368,7 +404,10 @@ export function ConnectDialog({
                   >
                     <AgentMark id={id} />
                     <span className="connect-card-name">
-                      <strong>{LABELS[id]}</strong>
+                      <strong>
+                        {LABELS[id]}
+                        {id === "lm-studio" && <span className="connect-tag">{t("Local model")}</span>}
+                      </strong>
                       {status(id)}
                     </span>
                     <Icon name="chevronDown" size={16} className="connect-chevron" />

@@ -308,3 +308,90 @@ fn now_ms() -> i64 {
         .unwrap()
         .as_millis() as i64
 }
+
+#[tokio::test]
+async fn the_same_message_asked_twice_is_told_and_never_goes_twice_by_itself() {
+    let world = World::new(DEFAULT_LATE_SEND_GRACE).await;
+    let Running {
+        endpoint,
+        mut desktop,
+        handle,
+    } = world.start().await;
+    let account = world.add_account(&mut desktop).await;
+    let _: Value = desktop
+        .call(
+            methods::ACCOUNT_SET_AGENT_ACCESS,
+            AgentAccessParams {
+                account_id: account.id.clone(),
+                access: AgentAccess::Send,
+            },
+        )
+        .await
+        .unwrap();
+    let mut agent = Client::connect(&endpoint, ClientKind::Mcp).await.unwrap();
+    async fn shown(desktop: &mut Client, id: i64) -> HoldView {
+        desktop.call(methods::HOLD_GET, HoldRef { id }).await.unwrap()
+    }
+
+    // A run replayed writes the same message again, as a new draft.
+    let first = draft(&mut agent, &account.id, "Plans").await;
+    let one = ask_to_send(&mut agent, &first).await;
+    let again = draft(&mut agent, &account.id, "Plans").await;
+    assert_ne!(again.id, first.id);
+    let two = ask_to_send(&mut agent, &again).await;
+    let other = draft(&mut agent, &account.id, "Other plans").await;
+    let three = ask_to_send(&mut agent, &other).await;
+
+    // The second says so, with what became of the first; the others do not.
+    assert_eq!(shown(&mut desktop, one).await.repeats, None);
+    assert_eq!(shown(&mut desktop, three).await.repeats, None);
+    let repeat = shown(&mut desktop, two).await.repeats.expect("asked before");
+    assert_eq!((repeat.hold_id, repeat.status), (Some(one), Some(HoldStatus::Pending)));
+    assert!(repeat.asked_at <= now_ms());
+    let listed: HoldListResult = desktop
+        .call(
+            methods::HOLD_LIST,
+            HoldListParams {
+                pending: true,
+                limit: None,
+            },
+        )
+        .await
+        .unwrap();
+    let in_list = listed.holds.iter().find(|hold| hold.id == two).unwrap();
+    assert_eq!(in_list.repeats, Some(repeat), "in the list as alone");
+    // The agent that asks sees it too.
+    let asked: HoldView = agent.call(methods::HOLD_GET, HoldRef { id: two }).await.unwrap();
+    assert_eq!(asked.repeats.map(|repeat| repeat.hold_id), Some(Some(one)));
+    // Once the first is approved, the second says the message already went.
+    decide(&mut desktop, methods::HOLD_APPROVE, one).await;
+    let repeat = shown(&mut desktop, two).await.repeats.unwrap();
+    assert_eq!(repeat.status, Some(HoldStatus::Approved));
+
+    // With an undo window a message goes by itself, but not the same one twice.
+    let _: Value = desktop
+        .call(
+            methods::ACCOUNT_SET_AGENT_SEND,
+            AgentSendParams {
+                account_id: account.id.clone(),
+                window_seconds: Some(10),
+            },
+        )
+        .await
+        .unwrap();
+    let regret = draft(&mut agent, &account.id, "Regret").await;
+    let _: DraftSendResult = agent.call(methods::DRAFT_SEND, send_now(&regret)).await.unwrap();
+    let regret_again = draft(&mut agent, &account.id, "Regret").await;
+    let held = ask_to_send(&mut agent, &regret_again).await;
+    let repeat = shown(&mut desktop, held).await.repeats.expect("it went before");
+    assert_eq!((repeat.hold_id, repeat.status), (None, None), "it went by itself");
+    // Another message still goes by itself.
+    let thanks = draft(&mut agent, &account.id, "Thanks").await;
+    let _: DraftSendResult = agent.call(methods::DRAFT_SEND, send_now(&thanks)).await.unwrap();
+    // And what was asked before the window (still waiting) counts as asked.
+    let plans_again = draft(&mut agent, &account.id, "Plans").await;
+    let held = ask_to_send(&mut agent, &plans_again).await;
+    assert!(shown(&mut desktop, held).await.repeats.is_some());
+
+    handle.abort();
+}

@@ -1,0 +1,36 @@
+<p>Nous avons lancé notre premier comparatif en attendant de bonnes nouvelles, et nous en avons eu, pour l’essentiel. Regards s’ouvrait plus vite que les trois applications comparées et utilisait bien moins de mémoire. Puis nous avons lu la dernière colonne.</p>
+<p>Fenêtre ouverte et sans rien faire, Regards utilisait plus de 3 % d’un cœur de processeur. Mailspring, dans le même test, en utilisait 0,05 %. Soixante fois moins.</p>
+<p>Trois pour cent, cela paraît peu. Sur un portable, c’est la différence entre un processeur qui dort et un processeur qui ne dort jamais, toute la journée, pour une application qui ne fait rien.</p>
+
+<h2>Chercher quelque chose qui n’est pas là</h2>
+<p>Le moteur de messagerie était le premier suspect, et il était innocent : son journal le montrait en train d’attendre tranquillement le serveur. Le travail se faisait dans la fenêtre. Mais la fenêtre ne changeait pas. Rien ne bougeait à l’écran.</p>
+<p>Nous avons donc demandé à la fenêtre elle-même quelles animations tournaient. Il y en avait exactement une : un petit indicateur de chargement tout au bout de la liste des messages, sous le dernier, bien en dehors de la partie visible. Il était là pour le cas où vous iriez jusqu’en bas et où il faudrait aller chercher d’autres e-mails. Il tournait depuis le lancement.</p>
+<p>Une animation qu’on ne voit pas coûte quand même. La fenêtre préparait soixante nouvelles images par seconde, chaque seconde, pour faire tourner un cercle que personne ne regardait. Nous l’avons mise en pause et avons observé le processeur.</p>
+
+<div class="wide cards2">
+  <div><small>Avant</small><h3>L’indicateur existe toujours</h3>Il est au bout de la liste et tourne sans fin, visible ou non.<code>6,35 % d’un cœur</code></div>
+  <div><small>Après</small><h3>L’indicateur existe pendant un chargement</h3>Il apparaît quand une page d’e-mails est en train d’arriver, et il est retiré quand elle est là.<code><b>0,31 %</b> d’un cœur</code></div>
+</div>
+
+<p>La correction tient en quelques lignes : la liste sait maintenant si elle charge, et ne dessine l’indicateur qu’à ce moment-là. Un test vérifie qu’il est absent quand rien ne charge.</p>
+
+<h2>Le second bug, caché derrière le premier</h2>
+<p>La fenêtre au calme, le coût du moteur est devenu visible : 0,34 % d’un cœur, et des salves de lecture sur le disque toutes les dix secondes. Sur nos petites boîtes, nous ne l’avions jamais vu. Sur les 20 000 messages du comparatif, c’était évident.</p>
+<p>Toutes les dix secondes, le moteur pose une question à sa base de données : un brouillon est-il en décalage avec le serveur ? Il y avait un seul brouillon. La base répondait en parcourant les 20 000 messages enregistrés pour trouver ceux qui lui correspondaient, en lisant des mégaoctets sur le disque à chaque fois. Le coût grandissait avec la boîte : ceux qui ont le plus d’e-mails payaient le plus.</p>
+<p>La question était bonne. L’ordre était mauvais : la base partait des messages alors qu’elle aurait dû partir des brouillons. Un seul changement lui dit par où commencer.</p>
+
+<div class="wide cards2">
+  <div><small>Avant</small><h3>Partir de tous les messages</h3>Parcourir 20 000 messages, garder ceux qui correspondent à un brouillon.<code>16 ms par vérification</code></div>
+  <div><small>Après</small><h3>Partir des brouillons</h3>Prendre le seul brouillon, retrouver directement ses messages.<code><b>0,006 ms</b> par vérification</code></div>
+</div>
+
+<p>Après ce changement, le moteur utilise 0,00 % d’un cœur au repos et ne lit rien sur le disque. Un nouveau test lit le plan de la base pour cette question et échoue si elle se remet un jour à parcourir toute la boîte.</p>
+
+<h2>Ce que nous en retenons</h2>
+<ul>
+  <li><b>Mesurer au repos, pas seulement au travail.</b> Les temps de lancement attirent l’attention. Une application passe l’essentiel de sa vie à ne rien faire, et c’est là qu’elle vous coûte de la batterie.</li>
+  <li><b>Tester sur une grande boîte.</b> Les deux bugs étaient invisibles sur une petite. Le comparatif utilise 20 000 messages, et nos propres tests vont jusqu’à 100 000.</li>
+  <li><b>Transformer chaque correction en test.</b> Un bug seulement corrigé revient. Un bug testé ne revient pas.</li>
+  <li><b>Publier les défaites.</b> Nous ne battons toujours pas Mailspring au repos. L’écrire, c’est ce qui nous fait continuer à y travailler.</li>
+</ul>
+<p>Les deux corrections arrivent dans la prochaine version de Regards. Les chiffres sont dans <a href="{{blog}}opens-in-0-89-seconds/">les résultats complets.</a></p>

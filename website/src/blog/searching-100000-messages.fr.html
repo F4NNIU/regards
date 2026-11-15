@@ -1,0 +1,34 @@
+<p>C’est à la recherche qu’on voit l’âge d’une application e-mail. Une boîte grossit pendant des années, et un jour le champ de recherche marque un temps avant de répondre. Nous avons construit Regards pour que ce jour n’arrive pas, et nous le testons sur une boîte de 100 000 messages à chaque modification.</p>
+
+<div class="wide tbl"><table>
+  <thead><tr><th>Ce que vous tapez</th><th>Temps de réponse</th></tr></thead>
+  <tbody>
+    <tr><th>Un mot rare, dans environ 300 messages</th><td>7 ms</td></tr>
+    <tr><th>Un mot présent dans environ 1 000 messages</th><td>38 ms</td></tr>
+    <tr><th>Un mot très courant, dans 88 000 messages</th><td>31 ms</td></tr>
+    <tr><th>Deux mots</th><td>7 ms</td></tr>
+    <tr><th>Les deux premières lettres d’un mot</th><td>23 ms</td></tr>
+    <tr><th>Une expression exacte</th><td>27 ms</td></tr>
+    <tr><th>Tout ce qui vient d’un expéditeur</th><td class="best">1,5 ms</td></tr>
+    <tr><th>Un mot, non lus seulement, avec une pièce jointe</th><td>20 ms</td></tr>
+    <tr><th>Un mot mal tapé, avec une suggestion</th><td>20 ms</td></tr>
+  </tbody>
+</table></div>
+
+<p>La plus lente prend 38 millisecondes. Un clignement d’œil en dure une centaine. Chaque recherche renvoie la première page de résultats, les meilleurs d’abord.</p>
+
+<h2>Comment ça marche</h2>
+<p><b>Un index, gardé sur votre ordinateur.</b> À mesure que les e-mails arrivent, Regards ajoute leur expéditeur, leur objet et le texte qu’il détient à un index de recherche enregistré à côté de vos messages. Chercher, c’est lire l’index et non les e-mails : le temps dépend de ce que vous cherchez, et presque pas de la quantité d’e-mails que vous avez.</p>
+<p><b>Il répond dès la deuxième lettre.</b> L’index connaît aussi les débuts de mots. Tapez deux lettres et des résultats apparaissent, puis s’affinent à mesure que vous continuez.</p>
+<p><b>Les accents ne comptent pas.</b> Chercher « resume » trouve « résumé », et inversement.</p>
+<p><b>Le meilleur résultat vient d’abord.</b> Un mot trouvé dans l’objet compte plus qu’un mot dans le nom de l’expéditeur, qui compte plus qu’un mot dans le texte du message.</p>
+<p><b>Les fautes de frappe reçoivent une suggestion.</b> Quand rien ne correspond, Regards cherche le mot le plus proche que vos e-mails contiennent et vous le propose.</p>
+<p><b>Les filtres font partie de la recherche.</b> Vous pouvez demander les non lus, les e-mails avec pièce jointe, ceux d’une personne ou une expression exacte, seuls ou avec des mots.</p>
+
+<h2>Privé par construction</h2>
+<p>L’index est un fichier sur votre ordinateur. Le construire et l’interroger ne passent par aucun serveur à nous, puisqu’il n’y en a pas. Rien de ce que vous tapez dans le champ de recherche ne quitte votre machine, sauf quand Regards demande aussi à votre propre fournisseur les messages plus anciens qu’il n’a pas encore enregistrés, et montre le tout dans une seule liste.</p>
+
+<h2>Sans ralentir le reste</h2>
+<p>Les nouveaux e-mails sont indexés en arrière-plan, par petits lots, pour que lire et classer restent instantanés pendant qu’une grande boîte est indexée. Sur les mêmes 100 000 messages, une page de la boîte de réception est prête en 1,2 milliseconde et une conversation entière en 0,2.</p>
+
+<p class="fine">Mesuré le 15 novembre 2026 sous Windows 11 (AMD Ryzen 7 5800X) avec le test de Regards lui-même, qui remplit une boîte de 100 000 messages générés et chronomètre le moteur de messagerie sans la fenêtre. Les temps sont les plus lents de plusieurs essais. Ce sont les chiffres de Regards seul : nous n’avons pas encore chronométré la recherche dans d’autres applications e-mail, et nous publierons cette comparaison quand nous l’aurons. Le test est dans le dépôt : <a href="https://github.com/lucienPochon/regards/blob/main/crates/regards-store/tests/scale.rs">scale.rs</a>.</p>

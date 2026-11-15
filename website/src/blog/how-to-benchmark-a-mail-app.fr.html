@@ -1,0 +1,43 @@
+<p>N’importe qui peut publier un graphique où son produit gagne. Nous voulions des chiffres défendables ligne par ligne : avant de mesurer quoi que ce soit, nous avons donc écrit les règles, puis nous en avons enfreint plusieurs par accident. Voici les deux listes.</p>
+
+<h2>Les six règles</h2>
+<ol>
+  <li><b>Les mêmes e-mails.</b> Chaque application reçoit un seul compte et rien d’autre : une boîte de 20 000 messages générés, identiques à l’octet près. Un script la remplit et affiche une empreinte de l’ensemble, publiée avec les résultats.</li>
+  <li><b>Un utilisateur neuf.</b> Un compte utilisateur créé pour le test, chaque application fraîchement installée et laissée sur ses réglages par défaut.</li>
+  <li><b>Un ordinateur au calme.</b> Branché, rien d’autre d’ouvert, une application à la fois.</li>
+  <li><b>Tout est dit.</b> La date, l’ordinateur, le système, la version de chaque application et la version exacte du test.</li>
+  <li><b>Toutes les applications, tous les chiffres.</b> Rien n’est écarté parce que Regards y perd.</li>
+  <li><b>Recommencer à chaque version.</b> Les anciens résultats restent dans le dépôt.</li>
+</ol>
+
+<h2>Mesurer de l’extérieur</h2>
+<p>Le test n’utilise les instruments d’aucune application, pas même les nôtres. Il observe chaque application comme vous le feriez avec un chronomètre : quand une fenêtre apparaît, quand ce qu’elle affiche cesse de changer, combien de temps processeur et de mémoire ses processus utilisent, combien de place elle prend sur le disque. Une application est comptée avec tous les processus qu’elle démarre : personne ne paraît plus léger en cachant du travail dans un auxiliaire.</p>
+
+<h2>Les cinq erreurs</h2>
+<p><b>1. Notre éditeur faisait quitter deux applications.</b> Le premier essai annonçait que Spark et Mailspring n’ouvraient jamais de fenêtre. Elles avaient démarré et s’étaient arrêtées aussitôt : le test était lancé depuis un éditeur de code qui définit une variable demandant aux applications de ce type de se comporter comme un outil en ligne de commande. Le test l’efface désormais.</p>
+<p><b>2. Nous avons compté un inconnu.</b> Une application affichait 347 secondes de temps processeur pour un lancement. Le test avait pris un programme sans rapport, lancé depuis longtemps, pour l’un de ses auxiliaires. Les processus sont maintenant reconnus à leur dossier d’installation.</p>
+<p><b>3. Observer changeait le résultat.</b> Pour savoir quand une fenêtre a fini de se dessiner, le test en prend de petites images. Prendre une image fait dessiner l’application, un travail qu’elle ne ferait pas seule, et toutes paraissaient occupées trois secondes de plus. Le temps de lancement et le temps processeur sont maintenant mesurés dans des lancements séparés, et personne ne regarde pendant les seconds.</p>
+<p><b>4. Nous avons mesuré le mauvais Thunderbird.</b> Deux versions étaient installées, et le compte avait été ajouté dans l’autre. Nos premiers chiffres pour Thunderbird étaient ceux d’une application sans e-mails. Nous avons mesuré à nouveau et corrigé les résultats ; l’erreur est consignée dans le fichier de résultats.</p>
+<p><b>5. Regards refusait parfois de démarrer.</b> Quelques lancements ne montraient aucune fenêtre. Regards n’autorise qu’un exemplaire à la fois, un autre était ouvert sur le même écran, et le nouveau lui passait poliment la main avant de partir.</p>
+<p>Aucune de ces erreurs n’a finalement avantagé Regards, et l’une d’elles cachait un résultat qui ne nous flattait pas. C’est tout l’intérêt des règles : on ne trouve ses propres erreurs que si on les cherche.</p>
+
+<h2>Deux règles que nous n’avons pas encore entièrement tenues</h2>
+<p>Ce premier essai a été fait pendant que l’ordinateur était utilisé, pas au calme, et Thunderbird a été mesuré dans sa version bêta, parce que c’est là que se trouvait le compte. Ni l’un ni l’autre ne change qui arrive premier, mais les deux vont contre nos propres règles : les deux sont donc écrits dans les fichiers de résultats. L’essai sera refait dans les règles à la prochaine version de Regards.</p>
+
+<h2>Ce que le test ne dit pas</h2>
+<ul>
+  <li>La vitesse à laquelle chaque application récupère une boîte pour la première fois, ouvre un message ou cherche. Il faut pour cela piloter chaque application : c’est la suite.</li>
+  <li>Le premier lancement après le démarrage de l’ordinateur, plus lent pour toutes.</li>
+  <li>Quoi que ce soit sur macOS ou Linux, pour l’instant.</li>
+  <li>Quoi que ce soit sur votre ordinateur. Pour cela, lancez-le.</li>
+</ul>
+
+<h2>Lancez-le vous-même</h2>
+<pre><i># récupérer le code</i>
+<b>&gt;</b> git clone https://github.com/lucienPochon/regards
+<b>&gt;</b> cd regards
+
+<i># mesurer les applications e-mail que vous avez (Windows)</i>
+<b>&gt;</b> powershell -ExecutionPolicy Bypass -File bench\compare-apps.ps1</pre>
+<p>Le script ferme et rouvre vos applications e-mail : ne le lancez pas pendant l’envoi d’un message. La méthode est décrite dans le <a href="https://github.com/lucienPochon/regards/tree/main/bench">dossier bench</a>, avec les résultats bruts de chaque essai. Si vous obtenez d’autres chiffres, nous voulons les voir.</p>
+<p>Les résultats eux-mêmes sont dans <a href="{{blog}}opens-in-0-89-seconds/">Regards s’ouvre en 0,89 seconde.</a></p>

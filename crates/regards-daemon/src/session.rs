@@ -2,8 +2,8 @@
 
 use crate::{
     State, access, accounts, actions, agents, assistant, attachments, audit, compose, context, discover, draft_sync,
-    erase, folders, holds, identities, invitations, labels, mail, notes, notices, oauth, people, prefetch, saved,
-    scheduler, signatures, smart, templates, unsubscribe, voice,
+    erase, folders, holds, identities, invitations, labels, mail, notes, notices, oauth, people, prefetch, queue,
+    saved, scheduler, signatures, smart, templates, unsubscribe, voice,
 };
 use regards_core::agents::Access;
 use regards_core::build_info::{BUILD_ID, VERSION};
@@ -14,8 +14,8 @@ use regards_ipc::protocol::{
     HelloParams, HelloResult, HoldRef, JSONRPC, MemoryParams, MessageHtmlParams, MessageIds, MessageListParams,
     MessageRef, MoveParams, MuteParams, NoteAddParams, NoteListParams, NoteRef, Notification, PROTOCOL_VERSIONS,
     PeopleSuggestParams, PinParams, Principal, PriorityParams, RemindParams, Request, Response, RpcError, SearchParams,
-    SenderBlockParams, SenderSetParams, SetFlagsParams, SnoozeParams, ViewParams, VoiceSuggestParams, codes, methods,
-    negotiate, notifications,
+    SenderBlockParams, SenderSetParams, ServerStatusParams, SetFlagsParams, SetLabelsParams, SnoozeParams, ViewParams,
+    VoiceSuggestParams, codes, methods, negotiate, notifications,
 };
 use regards_ipc::transport::Stream;
 use regards_store::holds::Reason;
@@ -192,11 +192,12 @@ impl Session {
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .take();
-            // What reverses it, when it changed something that can be undone.
-            let undo_id = outcome
-                .as_ref()
-                .ok()
-                .and_then(|result| result.get("undo")?.get("id")?.as_i64());
+            // What reverses it, when it changed something that can be undone:
+            // kept for a day, since the person may look at it hours later.
+            let undo_id = match &outcome {
+                Ok(result) => actions::keep_undo_for_agent(&self.state, result).await,
+                Err(_) => None,
+            };
             let answered = audit::Answered {
                 session,
                 client,
@@ -655,6 +656,11 @@ impl Session {
                 self.require_ui()?;
                 notes::forget_all(&self.state).await
             }
+            methods::SERVER_STATUS => {
+                let params: ServerStatusParams = params(request)?;
+                let scope = self.scope(Access::Read, params.account_id.as_deref()).await?;
+                queue::status(&self.state, params, scope).await
+            }
             methods::MEMORY_GET => {
                 let params: MemoryParams = params(request)?;
                 let scope = self.scope(Access::Read, params.account_id.as_deref()).await?;
@@ -741,6 +747,14 @@ impl Session {
             methods::ASSISTANT_RUN => {
                 self.require_ui()?;
                 assistant::run(&self.state, params(request)?).await
+            }
+            methods::ASSISTANT_LOCAL_SERVERS => {
+                self.require_ui()?;
+                assistant::local_servers(&self.state).await
+            }
+            methods::ASSISTANT_CHECK => {
+                self.require_ui()?;
+                assistant::check(&self.state).await
             }
             methods::CONNECTION_LOG_GET => {
                 self.require_ui()?;
@@ -876,8 +890,14 @@ impl Session {
                 labels::labels(&self.state, params).await
             }
             methods::MESSAGE_SET_LABELS => {
-                self.require_ui()?;
-                labels::set(&self.state, params(request)?).await
+                let params: SetLabelsParams = params(request)?;
+                if !self.is_ui() {
+                    // Access first, so an account closed to agents says nothing of itself.
+                    let account = self.allow_targets(Access::Triage, &params.ids).await?;
+                    labels::for_agents(&self.state, &account, !params.remove.is_empty()).await?;
+                    self.allow_change(Access::Triage, &params.ids, request).await?;
+                }
+                labels::set(&self.state, params).await
             }
             methods::THREAD_GET => {
                 let params: MessageRef = params(request)?;
@@ -1037,6 +1057,7 @@ impl Session {
             reason,
             description: description.clone(),
             draft: None,
+            send: None,
             people: Vec::new(),
             subject: description,
         };

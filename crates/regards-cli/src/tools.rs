@@ -303,6 +303,32 @@ pub(crate) const TOOLS: &[Tool] = &[
         read_only: false,
     },
     Tool {
+        name: "labels",
+        description: "The Gmail labels of messages: for each, the ids of its label folders. On Gmail, \
+                      the labels are the account's own folders (from `folders`: those without a role, \
+                      outside `[Gmail]`).",
+        access: Access::Read,
+        method: "message.labels",
+        params: &[MESSAGES],
+        links: Links::None,
+        read_only: true,
+    },
+    Tool {
+        name: "label",
+        description: "Add Gmail labels to messages, or remove them; the messages stay where they are. \
+                      A label is one of the account's own folders (from `folders`). Gmail accounts \
+                      only: elsewhere, `move` the message to a folder. Undoable from the app.",
+        access: Access::Triage,
+        method: "message.set_labels",
+        params: &[
+            MESSAGES,
+            param("add", Kind::Integers, "The labels to add (their folder ids)."),
+            param("remove", Kind::Integers, "The labels to remove (their folder ids)."),
+        ],
+        links: Links::None,
+        read_only: false,
+    },
+    Tool {
         name: "pin",
         description: "Pin messages to the top of the inbox, or unpin them.",
         access: Access::Triage,
@@ -549,9 +575,27 @@ pub(crate) const TOOLS: &[Tool] = &[
         read_only: false,
     },
     Tool {
+        name: "pending",
+        description: "Whether the mail server has what was changed here. A change (archive, move, label, \
+                      mark, delete) is made in Regards at once and sent to the server right after. \
+                      `waiting`: changes not sent yet, with the error when a try failed (they are tried \
+                      again). `refused`: changes the server would not make; the messages are back as \
+                      they were. Both empty: the server has everything.",
+        access: Access::Read,
+        method: "server.status",
+        params: &[param(
+            "account_id",
+            Kind::Text,
+            "Only this account (otherwise every account open to you).",
+        )],
+        links: Links::None,
+        read_only: true,
+    },
+    Tool {
         name: "hold",
         description: "What became of a request that waits for the person: pending, approved (with its \
-                      result), rejected, expired or failed.",
+                      result), rejected, expired or failed. For a send, `repeats` says the same message \
+                      was already asked to be sent within the last day.",
         access: Access::Read,
         method: "hold.get",
         params: &[first("hold_id", Kind::Integer, "The hold (from `held.hold_id`).")],
@@ -630,6 +674,7 @@ pub(crate) fn request(tool: &Tool, args: &Map<String, Value>) -> Result<Value, S
             "limit": number("limit"),
         }),
         "memory" => json!({ "address": text("address"), "account_id": text("account_id") }),
+        "pending" => json!({ "account_id": text("account_id") }),
         "note" => json!({
             "account_id": text("account_id"),
             "address": text("address"),
@@ -648,7 +693,20 @@ pub(crate) fn request(tool: &Tool, args: &Map<String, Value>) -> Result<Value, S
             "view": text("view"),
             "limit": number("limit"),
         }),
-        "archive" | "trash" | "delete_for_good" => json!({ "ids": ids("message_ids")? }),
+        "archive" | "trash" | "delete_for_good" | "labels" => json!({ "ids": ids("message_ids")? }),
+        "label" => {
+            let given = |name: &str| -> Result<Vec<i64>, String> {
+                match args.get(name) {
+                    None | Some(Value::Null) => Ok(Vec::new()),
+                    Some(_) => ids(name),
+                }
+            };
+            let (add, remove) = (given("add")?, given("remove")?);
+            if add.is_empty() && remove.is_empty() {
+                return Err("say which labels to add, to remove, or both".into());
+            }
+            json!({ "ids": ids("message_ids")?, "add": add, "remove": remove })
+        }
         "move" => json!({ "ids": ids("message_ids")?, "mailbox_id": number("mailbox_id") }),
         "mark" => {
             let (seen, flagged) = (flag("read"), flag("flagged"));
@@ -995,10 +1053,12 @@ mod tests {
                     reads::<MessageRef>(name, request)
                 }
                 methods::MESSAGE_VIEW => reads::<ViewParams>(name, request),
-                methods::MESSAGE_ARCHIVE | methods::MESSAGE_TRASH | methods::MESSAGE_DELETE => {
-                    reads::<MessageIds>(name, request)
-                }
+                methods::MESSAGE_ARCHIVE
+                | methods::MESSAGE_TRASH
+                | methods::MESSAGE_DELETE
+                | methods::MESSAGE_LABELS => reads::<MessageIds>(name, request),
                 methods::MESSAGE_MOVE => reads::<MoveParams>(name, request),
+                methods::MESSAGE_SET_LABELS => reads::<SetLabelsParams>(name, request),
                 methods::MESSAGE_SET_FLAGS => reads::<SetFlagsParams>(name, request),
                 methods::MESSAGE_PIN => reads::<PinParams>(name, request),
                 methods::MESSAGE_SET_ASIDE => reads::<AsideParams>(name, request),
@@ -1014,6 +1074,7 @@ mod tests {
                 methods::DRAFT_SEND => reads::<DraftSendParams>(name, request),
                 methods::HOLD_GET => reads::<HoldRef>(name, request),
                 methods::MEMORY_GET => reads::<MemoryParams>(name, request),
+                methods::SERVER_STATUS => reads::<ServerStatusParams>(name, request),
                 methods::NOTE_ADD => reads::<NoteAddParams>(name, request),
                 methods::NOTE_REMOVE => reads::<NoteRef>(name, request),
                 methods::VOICE_SUGGEST => reads::<VoiceSuggestParams>(name, request),

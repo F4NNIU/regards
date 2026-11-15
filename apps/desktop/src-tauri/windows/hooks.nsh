@@ -14,12 +14,18 @@
 
 !include LogicLib.nsh
 
-!define REGARDS_IN_USE "${PRODUCTNAME} is still in use by another program, so its files cannot be replaced.$\n$\nClose what is connected to it (an AI agent, a terminal running regards), then try again."
+; What is said when `regards.exe` stays in use. The installer speaks English
+; and French (`bundle.windows.nsis.languages`); 1036 is French. Accents are
+; written as ${U+xxxx} so the text does not depend on this file's encoding.
+!define REGARDS_IN_USE_EN "${PRODUCTNAME} is still in use by another program, so its files cannot be replaced.$\n$\nClose what is connected to it (an AI agent, a terminal running regards), then try again."
+!define REGARDS_IN_USE_FR "${PRODUCTNAME} est encore utilis${U+00E9} par un autre programme : ses fichiers ne peuvent pas ${U+00EA}tre remplac${U+00E9}s.$\n$\nFermez ce qui y est connect${U+00E9} (un agent IA, un terminal o${U+00F9} tourne regards), puis r${U+00E9}essayez."
 
 Var RegardsStopExit
 Var RegardsTry
 Var RegardsFile
 Var RegardsFree
+Var RegardsInUse
+
 
 !macro REGARDS_STOP_DAEMON
   ${If} ${FileExists} "$INSTDIR\regards.exe"
@@ -44,9 +50,14 @@ Var RegardsFree
       ${If} $RegardsFree = 1
         ${ExitDo}
       ${EndIf}
+      ${If} $LANGUAGE = 1036
+        StrCpy $RegardsInUse "${REGARDS_IN_USE_FR}"
+      ${Else}
+        StrCpy $RegardsInUse "${REGARDS_IN_USE_EN}"
+      ${EndIf}
       ; A silent install takes the default, and stops here.
-      ${If} ${Cmd} `MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${REGARDS_IN_USE}" /SD IDCANCEL IDCANCEL`
-        Abort "${REGARDS_IN_USE}"
+      ${If} ${Cmd} `MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "$RegardsInUse" /SD IDCANCEL IDCANCEL`
+        Abort "$RegardsInUse"
       ${EndIf}
     ${Loop}
   ${EndIf}
@@ -64,4 +75,21 @@ Var RegardsFree
     nsExec::Exec '"$INSTDIR\regards.exe" path remove'
     Pop $RegardsStopExit
   ${EndIf}
+  ; "Delete the application data" was ticked: the mail, the settings, the logs
+  ; and the passwords in the credential store go too, before regards.exe does.
+  ; With no daemon running: this is not something a connected program can ask.
+  ${If} $DeleteAppDataCheckboxState = 1
+  ${AndIf} $UpdateMode <> 1
+  ${AndIf} ${FileExists} "$INSTDIR\regards.exe"
+    nsExec::Exec '"$INSTDIR\regards.exe" erase --confirm "erase everything"'
+    Pop $RegardsStopExit
+  ${EndIf}
+!macroend
+
+; Up to 0.3.0 the installer had no publisher name, and kept its notes (where
+; Regards is installed, the installer's language) under the key below. They
+; are now under the publisher's name: the old ones go.
+!macro NSIS_HOOK_POSTINSTALL
+  DeleteRegKey HKCU "Software\regards\Regards"
+  DeleteRegKey /ifempty HKCU "Software\regards"
 !macroend

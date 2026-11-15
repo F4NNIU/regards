@@ -17,6 +17,15 @@ Open `website/dist/index.html` in a browser to see it.
 - **`src/layout.html`:** the `<head>` both share.
 - **`assets/`:** styles, script, fonts and the mark, copied as they are.
 
+- **`src/blog/`:** the blog, at `/blog/` and `/fr/blog/`. `posts.json` lists
+  the articles, newest first, with each one's date, title, heading and
+  description in both languages. An article's text is in `<slug>.en.html` and
+  `<slug>.fr.html`, which must have the same elements, like the pages.
+  `frame.html` is the bar and the foot around every blog page, and
+  `words.json` their words. To add an article: one entry in `posts.json`, two
+  files. Numbers in an article come from `bench/results/` and say when and on
+  what they were measured.
+
 What the build fills in:
 
 - `{{version}}`: the workspace version in `Cargo.toml`, so the page follows
@@ -27,6 +36,9 @@ What the build fills in:
   GitHub for each one; a file that is not published yet (the release is still
   a draft) links to the releases page instead, so deploy the site again once
   the release is published.
+- `{{dl_windows_arm}}`, `{{dl_deb_arm}}`, `{{dl_rpm_arm}}`, `{{dl_appimage_arm}}`: the
+  ARM64 installers, each with `{{…_off}}` inside its link's tag: the link is
+  left out of the page (`hidden`) while its file is not published.
 - `{{releases}}`: the latest GitHub release, the fallback above.
 
 ## Keep it true
@@ -47,8 +59,11 @@ everything but `website/` and `Cargo.toml` out of what is uploaded.
 - **By hand:** `vercel deploy --prod` from the root of the repository, signed
   in to the project's Vercel account.
 - **By itself:** the repository is connected to the project, so each merge
-  to `main` is published and each pull request gets a preview (a Vercel
-  check on the pull request).
+  to `main` is published. Only branches named `website/...` get a preview
+  (a Vercel check on the pull request); pushes to any other branch deploy
+  nothing (`git.deploymentEnabled` in `vercel.json`), so work on the app
+  does not use Vercel builds. Name a branch `website/...` when it changes
+  the page.
 
 The canonical and language links use the project's production domain. With a
 domain of its own, add it to the Vercel project and set `SITE_URL` there.

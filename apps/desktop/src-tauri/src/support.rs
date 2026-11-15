@@ -137,7 +137,10 @@ async fn report(app: &AppHandle) -> String {
                  addresses, passwords or tokens.\n",
             );
         }
+        let app_log = dirs.app_log();
         for (label, path) in [
+            ("App older log", app_log.with_extension("log.1")),
+            ("App log", app_log),
             ("Service older log", log.with_extension("log.1")),
             ("Service log", log),
             ("Older connection log", connections.with_extension("log.1")),
@@ -204,7 +207,7 @@ fn day(secs: i64) -> String {
 }
 
 /// `YYYY-MM-DD HH:MM` of a Unix time, UTC.
-fn timestamp(secs: i64) -> String {
+pub(crate) fn timestamp(secs: i64) -> String {
     let in_day = secs.rem_euclid(86_400);
     format!("{} {:02}:{:02}", day(secs), in_day / 3_600, in_day % 3_600 / 60)
 }

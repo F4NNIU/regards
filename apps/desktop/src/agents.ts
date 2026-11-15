@@ -25,7 +25,7 @@ export const agentsSettings = () => invoke<AgentsSettings>("agents_settings");
 
 /** An agent app the Agents menu knows, and how a request is handed to it. */
 export interface AgentApp {
-  id: "claude-code" | "claude-app" | "codex" | "cursor";
+  id: "claude-code" | "claude-app" | "codex" | "cursor" | "lm-studio";
   label: string;
   /** Opened with a request ready (`openInAgent`), or only copied to. */
   opens: boolean;
@@ -52,6 +52,8 @@ export const AGENT_APPS: AgentApp[] = [
   },
   { id: "codex", label: t("Codex"), opens: false, hint: "", is: (name) => /codex/i.test(name) },
   { id: "cursor", label: t("Cursor"), opens: false, hint: "", is: (name) => /cursor/i.test(name) },
+  // Runs models on this computer, and takes MCP servers.
+  { id: "lm-studio", label: t("LM Studio"), opens: false, hint: "", is: (name) => /lm[ -]?studio/i.test(name) },
 ];
 
 /** An agent app found on this computer. */
@@ -98,6 +100,9 @@ export const commandLine = (change?: "add" | "remove") =>
 
 /** Open Cursor, asking it to add Regards as an MCP server: the person confirms there. */
 export const addToCursor = () => invoke<void>("add_to_cursor");
+
+/** Open LM Studio, asking it to add Regards as an MCP server: the person confirms there. */
+export const addToLmStudio = () => invoke<void>("add_to_lm_studio");
 
 /** Open Claude Code or the Claude app with a request ready to send (nothing is sent until the person does). */
 export const openInAgent = (app: "claude-code" | "claude-app", prompt: string) =>
@@ -175,10 +180,18 @@ export interface AgentActivity {
   before: unknown;
   /**
    * What reverses that change, for `applyUndo` (accounts.ts), while
-   * `undoable`: undo lasts ten minutes, and works once.
+   * `undoable`: what an agent did can be undone for a day, and once.
    */
   undo_id: number | null;
   undoable: boolean;
+  /** Until when it can be undone (ms since the epoch), while it can. */
+  undo_until?: number | null;
+  /**
+   * Where its undo stands: still `open`, `used` (it was undone) or
+   * `expired`; `null` when the change had none. A daemon that does not
+   * say leaves `undoable` to go by.
+   */
+  undo_state?: "open" | "used" | "expired" | null;
 }
 
 export interface AgentActivityPage {
@@ -226,6 +239,13 @@ export interface Hold {
   /** Once approved: what running it gave, or (status "failed") why it could not run. */
   result: unknown;
   error: string | null;
+  /**
+   * For a send: the same message (recipients, subject, text) was already
+   * asked to be sent in this account within the last day. `hold_id` and
+   * `status`: the request it waited as and what became of it; both null
+   * when it went by itself after the account's undo window.
+   */
+  repeats?: { asked_at: number; hold_id: number | null; status: HoldStatus | null } | null;
 }
 
 /** Holds, newest first; only those still waiting with `pending`. */

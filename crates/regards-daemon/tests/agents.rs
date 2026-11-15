@@ -103,8 +103,20 @@ async fn agents_see_and_read_only_what_an_account_allows() {
     assert_eq!(refusal(opened).code, codes::FORBIDDEN);
     assert_eq!(accounts(&mut desktop).await[0].agent_access, AgentAccess::Off);
 
+    // What the server has of its changes is as closed as the account.
+    let status = |account_id: Option<&str>| regards_ipc::protocol::ServerStatusParams {
+        account_id: account_id.map(str::to_owned),
+    };
+    let closed = agent
+        .call::<_, Value>(methods::SERVER_STATUS, status(Some(&account.id)))
+        .await;
+    assert_eq!(refusal(closed).code, codes::FORBIDDEN);
+
     // Read: listed, its folders, views and search; mail they name must exist.
     set(&mut desktop, &account.id, AgentAccess::Read).await;
+    let nothing: regards_ipc::protocol::ServerStatusResult =
+        agent.call(methods::SERVER_STATUS, status(None)).await.unwrap();
+    assert!(nothing.waiting.is_empty() && nothing.refused.is_empty(), "{nothing:?}");
     let listed = accounts(&mut agent).await;
     assert_eq!((listed.len(), listed[0].agent_access), (1, AgentAccess::Read));
     let _: MailboxListResult = agent.call(methods::MAILBOX_LIST, mine()).await.unwrap();
@@ -365,6 +377,23 @@ async fn at_triage_agents_write_drafts_and_sort_senders() {
     );
     assert_eq!(
         (unknown.code, unknown.message.as_str()),
+        (codes::NOT_FOUND, "no such message: 999")
+    );
+    // Labels are open to triage: the daemon looks for the message, it does not send the agent away.
+    let labelled = refusal(
+        agent
+            .call::<_, Value>(
+                methods::MESSAGE_SET_LABELS,
+                regards_ipc::protocol::SetLabelsParams {
+                    ids: vec![999],
+                    add: vec![1],
+                    remove: vec![],
+                },
+            )
+            .await,
+    );
+    assert_eq!(
+        (labelled.code, labelled.message.as_str()),
         (codes::NOT_FOUND, "no such message: 999")
     );
     let bulk = refusal(
