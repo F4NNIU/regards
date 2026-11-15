@@ -36,6 +36,8 @@ const ACTIONS: Record<string, string> = {
   "message.delete": "Deleted for good",
   "message.move": "Moved",
   "message.set_flags": "Marked read, unread or flagged",
+  "message.labels": "Read labels",
+  "message.set_labels": "Changed labels",
   "message.pin": "Pinned",
   "message.snooze": "Snoozed",
   "message.set_aside": "Set aside",

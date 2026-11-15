@@ -367,6 +367,23 @@ async fn at_triage_agents_write_drafts_and_sort_senders() {
         (unknown.code, unknown.message.as_str()),
         (codes::NOT_FOUND, "no such message: 999")
     );
+    // Labels are open to triage: the daemon looks for the message, it does not send the agent away.
+    let labelled = refusal(
+        agent
+            .call::<_, Value>(
+                methods::MESSAGE_SET_LABELS,
+                regards_ipc::protocol::SetLabelsParams {
+                    ids: vec![999],
+                    add: vec![1],
+                    remove: vec![],
+                },
+            )
+            .await,
+    );
+    assert_eq!(
+        (labelled.code, labelled.message.as_str()),
+        (codes::NOT_FOUND, "no such message: 999")
+    );
     let bulk = refusal(
         agent
             .call::<_, Value>(

@@ -14,8 +14,8 @@ use regards_ipc::protocol::{
     HelloParams, HelloResult, HoldRef, JSONRPC, MemoryParams, MessageHtmlParams, MessageIds, MessageListParams,
     MessageRef, MoveParams, MuteParams, NoteAddParams, NoteListParams, NoteRef, Notification, PROTOCOL_VERSIONS,
     PeopleSuggestParams, PinParams, Principal, PriorityParams, RemindParams, Request, Response, RpcError, SearchParams,
-    SenderBlockParams, SenderSetParams, SetFlagsParams, SnoozeParams, ViewParams, VoiceSuggestParams, codes, methods,
-    negotiate, notifications,
+    SenderBlockParams, SenderSetParams, SetFlagsParams, SetLabelsParams, SnoozeParams, ViewParams, VoiceSuggestParams,
+    codes, methods, negotiate, notifications,
 };
 use regards_ipc::transport::Stream;
 use regards_store::holds::Reason;
@@ -876,8 +876,14 @@ impl Session {
                 labels::labels(&self.state, params).await
             }
             methods::MESSAGE_SET_LABELS => {
-                self.require_ui()?;
-                labels::set(&self.state, params(request)?).await
+                let params: SetLabelsParams = params(request)?;
+                if !self.is_ui() {
+                    // Access first, so an account closed to agents says nothing of itself.
+                    let account = self.allow_targets(Access::Triage, &params.ids).await?;
+                    labels::for_agents(&self.state, &account).await?;
+                    self.allow_change(Access::Triage, &params.ids, request).await?;
+                }
+                labels::set(&self.state, params).await
             }
             methods::THREAD_GET => {
                 let params: MessageRef = params(request)?;

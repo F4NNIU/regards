@@ -10,8 +10,10 @@ In Regards, open **Settings › Agents** and set each account:
 | --- | --- |
 | Off (default) | Nothing: they do not see the account |
 | Read | List, search and read mail, your voice and notes about people. Reading never marks it read |
-| Triage | Read, and organise (archive, move, flag, pin, snooze, sort senders), write drafts, keep notes about people and suggest a voice |
+| Triage | Read, and organise (archive, move, label, flag, pin, snooze, sort senders), write drafts, keep notes about people and suggest a voice |
 | Send | Triage, and ask to send |
+
+Labels are for Gmail accounts, where a label is one of your own folders. On other accounts, agents file mail by moving it to a folder.
 
 Only you can change these, in the app. Agents cannot change them.
 
