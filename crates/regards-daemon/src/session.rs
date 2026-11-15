@@ -747,6 +747,14 @@ impl Session {
                 self.require_ui()?;
                 assistant::run(&self.state, params(request)?).await
             }
+            methods::ASSISTANT_LOCAL_SERVERS => {
+                self.require_ui()?;
+                assistant::local_servers(&self.state).await
+            }
+            methods::ASSISTANT_CHECK => {
+                self.require_ui()?;
+                assistant::check(&self.state).await
+            }
             methods::CONNECTION_LOG_GET => {
                 self.require_ui()?;
                 Ok(mail::connection_log(&self.state))

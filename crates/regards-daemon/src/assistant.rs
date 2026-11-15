@@ -7,14 +7,15 @@
 
 use crate::State;
 use crate::accounts::{store_error, vault, vault_error};
-use regards_core::assistant::{self, Kind, Message, Task};
+use regards_core::assistant::{self, AnswerError, Kind, LocalApp, Message, Task};
 use regards_core::headers::Person;
 use regards_core::secret::Secret;
 use regards_ipc::protocol::{
-    AssistantParams, AssistantPreview, AssistantResult, AssistantSetSettingsParams, AssistantSettings,
-    DraftReplyParams, DraftView, RpcError, codes,
+    AssistantCheck, AssistantLocalServers, AssistantParams, AssistantPreview, AssistantProblem, AssistantResult,
+    AssistantSetSettingsParams, AssistantSettings, DraftReplyParams, DraftView, LocalModelServer, RpcError, codes,
 };
-use regards_net::https::post_json;
+use regards_net::TlsOptions;
+use regards_net::https::{HttpsResponse, get_within, post_json};
 use regards_store::{accounts, mailboxes, messages, settings};
 use regards_vault::SecretKey;
 use serde_json::{Value, json};
@@ -27,6 +28,8 @@ const MODEL: &str = "assistant.model";
 const KEY: &str = "assistant/api-key";
 /// A model may think a while before it answers.
 const WAIT: Duration = Duration::from_secs(120);
+/// A server on this computer lists its models at once, or is not there.
+const LOOK: Duration = Duration::from_millis(1500);
 /// The Messages API version Regards speaks.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 /// Messages of a conversation looked at, the latest: more than are sent, as
@@ -355,17 +358,40 @@ async fn ask(
     system: &str,
     user: &str,
 ) -> Result<String, RpcError> {
+    let body = match chosen.kind {
+        Kind::Anthropic => assistant::anthropic_body(&chosen.model, task, system, user),
+        Kind::OpenaiCompatible => assistant::openai_body(&chosen.model, task, system, user),
+    };
+    let answer = post(state, chosen, key, &body).await.map_err(|unsent| match unsent {
+        Unsent::NoKey => failed(NO_KEY.into()),
+        Unsent::Unreachable(error) => failed(format!("could not reach {}: {error}", authority(&chosen.base_url))),
+    })?;
+    let text = match chosen.kind {
+        Kind::Anthropic => assistant::read_anthropic(answer.status, &answer.body),
+        Kind::OpenaiCompatible => assistant::read_openai(answer.status, &answer.body),
+    };
+    text.map_err(|error| failed(error.to_string()))
+}
+
+const NO_KEY: &str = "no Anthropic key is kept; add one in Settings";
+
+/// Why a request did not go, or got no answer.
+enum Unsent {
+    /// Anthropic, and no key is kept.
+    NoKey,
+    Unreachable(String),
+}
+
+/// Send `body` to the chosen provider, with the key if there is one.
+async fn post(state: &State, chosen: &Chosen, key: Option<&Secret>, body: &str) -> Result<HttpsResponse, Unsent> {
     let bearer: Secret;
     let mut headers: Vec<(&str, &str)> = Vec::new();
-    let (url, body) = match chosen.kind {
+    let url = match chosen.kind {
         Kind::Anthropic => {
-            let key = key.ok_or_else(|| failed("no Anthropic key is kept; add one in Settings".into()))?;
+            let key = key.ok_or(Unsent::NoKey)?;
             headers.push(("x-api-key", key.expose()));
             headers.push(("anthropic-version", ANTHROPIC_VERSION));
-            (
-                format!("{}/v1/messages", chosen.base_url),
-                assistant::anthropic_body(&chosen.model, task, system, user),
-            )
+            format!("{}/v1/messages", chosen.base_url)
         }
         Kind::OpenaiCompatible => {
             // A server on this computer may want no key.
@@ -373,20 +399,67 @@ async fn ask(
                 bearer = Secret::new(format!("Bearer {}", key.expose()));
                 headers.push(("Authorization", bearer.expose()));
             }
-            (
-                format!("{}/chat/completions", chosen.base_url),
-                assistant::openai_body(&chosen.model, task, system, user),
-            )
+            format!("{}/chat/completions", chosen.base_url)
         }
     };
-    let answer = post_json(&url, &headers, &body, WAIT, &state.tls)
+    post_json(&url, &headers, body, WAIT, &state.tls)
         .await
-        .map_err(|error| failed(format!("could not reach {}: {error}", authority(&chosen.base_url))))?;
-    let text = match chosen.kind {
-        Kind::Anthropic => assistant::read_anthropic(answer.status, &answer.body),
-        Kind::OpenaiCompatible => assistant::read_openai(answer.status, &answer.body),
+        .map_err(|error| Unsent::Unreachable(error.to_string()))
+}
+
+/// `assistant.local_servers`: who answers on this computer, at the usual
+/// ports. Nothing but this computer is asked, and nothing is kept.
+pub(crate) async fn local_servers(state: &State) -> Result<Value, RpcError> {
+    let [first, second, third] = LocalApp::ALL;
+    let found = tokio::join!(
+        look(&state.tls, first, first.port()),
+        look(&state.tls, second, second.port()),
+        look(&state.tls, third, third.port()),
+    );
+    Ok(json!(AssistantLocalServers {
+        servers: [found.0, found.1, found.2].into_iter().flatten().collect(),
+    }))
+}
+
+/// The model server at `port` of this computer, if one lists its models there.
+async fn look(tls: &TlsOptions, app: LocalApp, port: u16) -> Option<LocalModelServer> {
+    let base_url = format!("http://localhost:{port}/v1");
+    let answer = get_within(&format!("{base_url}/models"), LOOK, tls).await.ok()?;
+    let models = assistant::read_models(answer.status, &answer.body)?;
+    Some(LocalModelServer { app, base_url, models })
+}
+
+/// `assistant.check`: one word asked of the chosen model, with no mail.
+pub(crate) async fn check(state: &State) -> Result<Value, RpcError> {
+    let chosen = chosen(state).await?.ok_or_else(off)?;
+    let key = vault(state).await?.get(&key()).await.map_err(vault_error)?;
+    let body = match chosen.kind {
+        Kind::Anthropic => assistant::anthropic_check_body(&chosen.model),
+        Kind::OpenaiCompatible => assistant::openai_check_body(&chosen.model),
     };
-    text.map_err(|error| failed(error.to_string()))
+    let outcome = match post(state, &chosen, key.as_ref(), &body).await {
+        Ok(answer) => assistant::read_check(chosen.kind, answer.status, &answer.body).map_err(|error| {
+            let problem = match error {
+                AnswerError::Key => AssistantProblem::Key,
+                AnswerError::Busy => AssistantProblem::Busy,
+                AnswerError::NotFound => AssistantProblem::NotFound,
+                AnswerError::Declined | AnswerError::Provider(_) | AnswerError::Unreadable => AssistantProblem::Other,
+            };
+            (problem, error.to_string())
+        }),
+        Err(Unsent::NoKey) => Err((AssistantProblem::Key, NO_KEY.to_owned())),
+        Err(Unsent::Unreachable(error)) => Err((AssistantProblem::Unreachable, error)),
+    };
+    let (problem, detail) = match outcome {
+        Ok(()) => (None, None),
+        Err((problem, detail)) => (Some(problem), Some(detail)),
+    };
+    Ok(json!(AssistantCheck {
+        destination: authority(&chosen.base_url),
+        model: chosen.model,
+        problem,
+        detail,
+    }))
 }
 
 #[cfg(test)]
@@ -412,5 +485,48 @@ mod tests {
         assert_eq!(authority("http://[::1]:8080/v1"), "[::1]:8080");
         assert_ne!(origin("http://localhost:8443/v1"), origin("https://localhost:8443/v1"));
         assert_eq!(origin("https://Example.org/v1"), origin("https://example.org/v2"));
+    }
+
+    /// Answers every request with `answer`, as a model server would.
+    async fn serve(answer: &'static str) -> u16 {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            while let Ok((mut stream, _)) = listener.accept().await {
+                let mut request = [0u8; 4096];
+                let _ = stream.read(&mut request).await;
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{answer}",
+                    answer.len()
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+                let _ = stream.shutdown().await;
+            }
+        });
+        port
+    }
+
+    #[tokio::test]
+    async fn a_model_server_on_this_computer_is_found_with_its_models() {
+        let tls = TlsOptions::platform();
+        let port = serve(r#"{"object":"list","data":[{"id":"llama3.1:8b"},{"id":"qwen3"}]}"#).await;
+        assert_eq!(
+            look(&tls, LocalApp::Ollama, port).await,
+            Some(LocalModelServer {
+                app: LocalApp::Ollama,
+                base_url: format!("http://localhost:{port}/v1"),
+                models: vec!["llama3.1:8b".into(), "qwen3".into()],
+            })
+        );
+        // Something else listens there: not a model server.
+        let other = serve("<html>hello</html>").await;
+        assert_eq!(look(&tls, LocalApp::LlamaCpp, other).await, None);
+        // Nothing listens there.
+        let closed = {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            listener.local_addr().unwrap().port()
+        };
+        assert_eq!(look(&tls, LocalApp::LmStudio, closed).await, None);
     }
 }

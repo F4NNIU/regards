@@ -2,7 +2,7 @@
 
 use crate::token::UiToken;
 pub use regards_core::agents::Access as AgentAccess;
-pub use regards_core::assistant::{Kind as AssistantKind, Task as AssistantTask};
+pub use regards_core::assistant::{Kind as AssistantKind, LocalApp as LocalModelApp, Task as AssistantTask};
 use regards_core::body::Attachment;
 pub use regards_core::compose::{AutoCopy, CopyKind, SendCheck};
 pub use regards_core::executor::Executor;
@@ -352,6 +352,14 @@ pub mod methods {
     pub const ASSISTANT_PREVIEW: &str = "assistant.preview";
     /// Do a task: a conversation's summary, or a reply drafted (never sent).
     pub const ASSISTANT_RUN: &str = "assistant.run";
+    /// The model servers answering on this computer (Ollama, LM Studio,
+    /// llama.cpp, at their usual ports) and the models each lists:
+    /// [`AssistantLocalServers`]. Only this computer is asked. `ui` only,
+    /// like the one below.
+    pub const ASSISTANT_LOCAL_SERVERS: &str = "assistant.local_servers";
+    /// Ask the chosen model for one word, with no mail, to show the server,
+    /// the model and the key work: [`AssistantCheck`].
+    pub const ASSISTANT_CHECK: &str = "assistant.check";
     /// New mail not told of yet (plan §5.12): what came into an inbox since
     /// sync last looked, still unread, oldest first. `ui` only.
     pub const MAIL_ARRIVED: &str = "mail.arrived";
@@ -2712,6 +2720,52 @@ pub struct AssistantResult {
     /// For a reply: the draft it was written into, above the signature and
     /// the quoted message, to review and send (or not).
     pub draft: Option<DraftView>,
+}
+
+/// A model server found on this computer.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LocalModelServer {
+    /// The app whose usual port it answers on.
+    pub app: LocalModelApp,
+    /// Its base, as [`AssistantSetSettingsParams::base_url`] takes it:
+    /// `http://localhost:11434/v1`.
+    pub base_url: String,
+    /// The models it lists, in its order; none when it has none yet.
+    pub models: Vec<String>,
+}
+
+/// The result of [`methods::ASSISTANT_LOCAL_SERVERS`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssistantLocalServers {
+    pub servers: Vec<LocalModelServer>,
+}
+
+/// Why a check of the assistant failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AssistantProblem {
+    /// Nothing answered at the address: the server is not running, or is elsewhere.
+    Unreachable,
+    /// The key was refused, or one is needed.
+    Key,
+    /// The server answered, without this model or at another address.
+    NotFound,
+    /// The server is busy or over its limits.
+    Busy,
+    /// Anything else: `detail` says what.
+    Other,
+}
+
+/// The result of [`methods::ASSISTANT_CHECK`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssistantCheck {
+    /// The host that was asked.
+    pub destination: String,
+    pub model: String,
+    /// `None`: the model answered.
+    pub problem: Option<AssistantProblem>,
+    /// What went wrong, in words (English), to show beside the problem.
+    pub detail: Option<String>,
 }
 
 /// Parameters of [`methods::PREFETCH_SET`], and the result of both.

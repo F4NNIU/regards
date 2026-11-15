@@ -589,6 +589,29 @@ async fn assistant_run(
         .map_err(describe)
 }
 
+/// The model servers answering on this computer, and the models each lists.
+#[tauri::command]
+async fn assistant_local_servers(
+    bridge: State<'_, Bridge>,
+) -> Result<Vec<regards_ipc::protocol::LocalModelServer>, String> {
+    let mut client = bridge.connect().await?.client;
+    let found: regards_ipc::protocol::AssistantLocalServers = client
+        .call(methods::ASSISTANT_LOCAL_SERVERS, Value::Null)
+        .await
+        .map_err(describe)?;
+    Ok(found.servers)
+}
+
+/// One word asked of the chosen model, with no mail: does it answer?
+#[tauri::command]
+async fn assistant_check(bridge: State<'_, Bridge>) -> Result<regards_ipc::protocol::AssistantCheck, String> {
+    let mut client = bridge.connect().await?.client;
+    client
+        .call(methods::ASSISTANT_CHECK, Value::Null)
+        .await
+        .map_err(describe)
+}
+
 /// Whether recent inbox mail is downloaded ahead (off by default).
 #[tauri::command]
 async fn prefetch_get(bridge: State<'_, Bridge>) -> Result<bool, String> {
@@ -2199,6 +2222,8 @@ fn main() {
             set_assistant_settings,
             assistant_preview,
             assistant_run,
+            assistant_local_servers,
+            assistant_check,
             prefetch_get,
             prefetch_set,
             account_set_auto_copy,
