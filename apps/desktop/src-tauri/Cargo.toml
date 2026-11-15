@@ -36,6 +36,10 @@ tauri-plugin-notification = "~2.5.1"
 # The main window comes back at its size, place and maximised state. 2.5.0
 # (2026-09-26) is the newest older than two weeks.
 tauri-plugin-window-state = "~2.5.0"
+# Installs a later version from inside the app (updates.rs), used from Rust
+# only: the WebView is granted none of its commands. 2.14.1 is from 2026-10-28.
+# Without its "zip" feature: the installers are fetched as they are.
+tauri-plugin-updater = { version = "2.14.1", default-features = false, features = ["rustls-tls", "system-proxy"] }
 getrandom.workspace = true
 open = "5.4"
 tokio.workspace = true

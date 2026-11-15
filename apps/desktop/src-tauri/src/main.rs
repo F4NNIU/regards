@@ -2094,6 +2094,9 @@ fn main() {
         ))
         // Used from Rust only, as above.
         .plugin(tauri_plugin_notification::init())
+        // Installs a later version when the person asks (updates.rs). Used from
+        // Rust only, as above; it asks nothing of the network by itself.
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // The main window's size, place and maximised state, put back when it is
         // first shown (background::show). Composer windows are not kept.
         .plugin(
@@ -2213,6 +2216,7 @@ fn main() {
             updates::update_set_checks,
             updates::update_check,
             updates::update_open,
+            updates::update_install,
             account_oauth_providers,
             account_oauth_start,
             account_oauth_finish,

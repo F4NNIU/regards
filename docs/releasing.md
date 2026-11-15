@@ -32,7 +32,8 @@ Development builds don't need any of this: Cargo builds `regards` into the same 
      - **Windows x64:** the NSIS installer. Its [hooks](../apps/desktop/src-tauri/windows/hooks.nsh) run `regards daemon stop` before files are replaced or removed, because in background mode the daemon keeps running, and Windows won't replace a running program. An MSI would need the same, so none is built;
      - **macOS:** Apple silicon and Intel, as DMG;
      - **Linux x64:** deb, rpm and AppImage, built on Ubuntu 22.04 so they run on more systems;
-   - uploads the bundles to the draft.
+   - uploads the bundles to the draft, each with its update signature (`.sig`), and for macOS the packed app an installed copy updates from (`.app.tar.gz`);
+   - writes the update manifest, `latest.json`, and uploads it too (see [Updates](#updates)).
 
    It can also be started by hand (*Run workflow*) for an existing tag.
 3. **Try the installers**, at least on one system, then publish the draft. Nothing is published before that.
@@ -47,13 +48,39 @@ To build one bundle locally: `cd apps/desktop && npm run release`, optionally wi
   - macOS: Developer ID and notarisation need the Apple Developer Program ($99 a year), so not for now.
 
   Until then, Windows SmartScreen and macOS Gatekeeper warn on first start.
-- **Installing updates by itself:** this needs a signing key pair for the update files, kept by the owner, and Tauri's updater.
 
-## Update checks
+## Updates
 
-What exists today (`apps/desktop/src-tauri/src/updates.rs`):
+In the app (`apps/desktop/src-tauri/src/updates.rs`):
 - **Asked once:** the app asks the person whether to check for updates. It doesn't check until they say yes, because a check tells GitHub the computer's address ([privacy](privacy.md)).
 - **When on:** it asks GitHub's API for the latest release once a day.
-- **When there is a later version:** a later release (not a draft or pre-release, with a page in this repository) is told once, by a notification and the `update_available` event. The person opens its page and downloads the installer.
+- **When there is a later version:** a later release (not a draft or pre-release, with a page in this repository) is told once, by a notification and the `update_available` event.
+- **Installing it:** in Settings › About, *Install and restart* downloads the new version, checks its signature, installs it and starts Regards again. This is [Tauri's updater](https://v2.tauri.app/plugin/updater/), used from Rust only. Nothing is downloaded before the person asks. If installing fails, or in a copy that can't replace itself (a development build), *Download* opens the release page instead.
 
-Publishing a release (above) is all it takes for installed copies to learn of it. A fork's build can point elsewhere with `REGARDS_RELEASES_API` and `REGARDS_RELEASE_PAGES` at build time.
+Publishing a release (above) is all it takes for installed copies to learn of it and install it. Versions up to 0.3.0 have no updater: they are told of a later version, and the person downloads it.
+
+### How an installed copy finds the files
+
+It reads `latest.json` from the latest published release (`plugins.updater.endpoints` in [`tauri.conf.json`](../apps/desktop/src-tauri/tauri.conf.json)). The Release workflow writes that file with [`scripts/update-manifest.mjs`](../apps/desktop/scripts/update-manifest.mjs): the version, and for each system the file to download and its signature.
+
+| An installed copy from | Updates from |
+| --- | --- |
+| The Windows installer | The same installer, `…_x64-setup.exe`, run without questions |
+| A macOS DMG | The packed app, `…_aarch64.app.tar.gz` or `…_x64.app.tar.gz` |
+| The AppImage | The new AppImage |
+| The .deb or .rpm | The new package, when the build signed one; otherwise installing fails, and *Download* is offered |
+
+A release whose `latest.json` is missing is still announced, but can't be installed from the app.
+
+### The update key
+
+Update files are signed with a key pair made for this (`npm run tauri signer generate`); it has nothing to do with Windows code signing.
+- **The public key** is in `tauri.conf.json` (`plugins.updater.pubkey`). An installed copy refuses any file the private key didn't sign.
+- **The private key** is the repository secret `TAURI_SIGNING_PRIVATE_KEY`, with `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if it has a password. The owner keeps a copy outside the repository. The workflow stops when the secret is missing.
+- **Don't lose it, and don't change it.** Installed copies only trust that key: with another one, they can't update by themselves any more, and everyone has to download an installer by hand once.
+
+The workflow builds with [`tauri.updater.json`](../apps/desktop/src-tauri/tauri.updater.json) on top of the release configuration, which makes the signatures. A local `npm run release` doesn't, so it needs no key. To make them locally, set `TAURI_SIGNING_PRIVATE_KEY` (the key, or the path of its file) and run `npm run release -- --config src-tauri/tauri.updater.json`.
+
+**When Windows code signing arrives:** signing the installer changes the file, so its update signature has to be made after that, from the signed installer (`npm run tauri signer sign`), before `latest.json` is written.
+
+A fork's build can point elsewhere: `REGARDS_RELEASES_API` and `REGARDS_RELEASE_PAGES` at build time for the check, and its own `plugins.updater` endpoint and key for installing.

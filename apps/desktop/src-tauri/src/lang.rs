@@ -153,6 +153,10 @@ const FR: &[(&str, &str)] = &[
         "Open Settings › About to download it.",
         "Ouvrez Paramètres › À propos pour la télécharger.",
     ),
+    (
+        "Open Settings › About to install it.",
+        "Ouvrez Paramètres › À propos pour l’installer.",
+    ),
     // File dialogs.
     ("Save attachment", "Enregistrer la pièce jointe"),
     ("Save all attachments in", "Enregistrer toutes les pièces jointes dans"),

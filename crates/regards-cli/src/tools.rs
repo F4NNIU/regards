@@ -575,6 +575,23 @@ pub(crate) const TOOLS: &[Tool] = &[
         read_only: false,
     },
     Tool {
+        name: "pending",
+        description: "Whether the mail server has what was changed here. A change (archive, move, label, \
+                      mark, delete) is made in Regards at once and sent to the server right after. \
+                      `waiting`: changes not sent yet, with the error when a try failed (they are tried \
+                      again). `refused`: changes the server would not make; the messages are back as \
+                      they were. Both empty: the server has everything.",
+        access: Access::Read,
+        method: "server.status",
+        params: &[param(
+            "account_id",
+            Kind::Text,
+            "Only this account (otherwise every account open to you).",
+        )],
+        links: Links::None,
+        read_only: true,
+    },
+    Tool {
         name: "hold",
         description: "What became of a request that waits for the person: pending, approved (with its \
                       result), rejected, expired or failed.",
@@ -656,6 +673,7 @@ pub(crate) fn request(tool: &Tool, args: &Map<String, Value>) -> Result<Value, S
             "limit": number("limit"),
         }),
         "memory" => json!({ "address": text("address"), "account_id": text("account_id") }),
+        "pending" => json!({ "account_id": text("account_id") }),
         "note" => json!({
             "account_id": text("account_id"),
             "address": text("address"),
@@ -1055,6 +1073,7 @@ mod tests {
                 methods::DRAFT_SEND => reads::<DraftSendParams>(name, request),
                 methods::HOLD_GET => reads::<HoldRef>(name, request),
                 methods::MEMORY_GET => reads::<MemoryParams>(name, request),
+                methods::SERVER_STATUS => reads::<ServerStatusParams>(name, request),
                 methods::NOTE_ADD => reads::<NoteAddParams>(name, request),
                 methods::NOTE_REMOVE => reads::<NoteRef>(name, request),
                 methods::VOICE_SUGGEST => reads::<VoiceSuggestParams>(name, request),

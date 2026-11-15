@@ -1,8 +1,12 @@
 //! Update checks (plan Phase 7): off until the person turns them on, as the
 //! privacy statement promises, because a check tells GitHub this computer's
 //! address. On, Regards asks once a day for the latest release; a newer
-//! version is told once, and its page opens in the browser for the
-//! download. The installer stops the running service itself
+//! version is told once. The person then has it installed from Settings ›
+//! About (`update_install`): Tauri's updater downloads the installer or
+//! package this copy came from, checks its signature against the key in
+//! `tauri.conf.json`, installs it and starts Regards again. A copy that
+//! can't (a development build) opens the release page in the browser
+//! instead. The installer stops the running service itself
 //! (`windows/hooks.nsh`), and the new app replaces an older daemon on its
 //! first connection (ADR-0005).
 
@@ -14,6 +18,7 @@ use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_updater::UpdaterExt;
 
 /// Where the latest release is asked for; a fork's build can point elsewhere.
 const LATEST: &str = match option_env!("REGARDS_RELEASES_API") {
@@ -49,6 +54,23 @@ pub(crate) struct UpdateStatus {
     available: Option<Update>,
     /// Unix ms of the last check, this run.
     checked_at: Option<i64>,
+    /// Whether this copy can install an update by itself (`update_install`);
+    /// otherwise the release page is opened for the download.
+    can_install: bool,
+}
+
+/// How far the download of an update is, told as `update_progress`.
+#[derive(Debug, Clone, Copy, Serialize)]
+struct Progress {
+    received: u64,
+    /// Unknown when the server does not say.
+    total: Option<u64>,
+}
+
+/// Whether this copy can replace itself: it came from an installer or a
+/// package, which a development build did not.
+fn can_install() -> bool {
+    !cfg!(debug_assertions) && tauri::utils::platform::bundle_type().is_some()
 }
 
 #[derive(Default)]
@@ -122,7 +144,11 @@ async fn check_and_tell(app: &AppHandle) -> Result<Option<Update>, String> {
                         "Regards {version} is available",
                         &[("version", &update.version)],
                     ))
-                    .body(crate::lang::tr("Open Settings › About to download it."))
+                    .body(crate::lang::tr(if can_install() {
+                        "Open Settings › About to install it."
+                    } else {
+                        "Open Settings › About to download it."
+                    }))
                     .show();
             }
         }
@@ -155,6 +181,7 @@ pub(crate) fn update_status(background: State<'_, Background>, updates: State<'_
         current: VERSION,
         available: updates.found.lock().expect("never poisoned").clone(),
         checked_at: *updates.checked_at.lock().expect("never poisoned"),
+        can_install: can_install(),
     }
 }
 
@@ -181,6 +208,38 @@ pub(crate) fn update_open(updates: State<'_, Updates>) -> Result<(), String> {
         .map(|update| update.url.clone())
         .ok_or("no update was found")?;
     open::that_detached(&url).map_err(|error| format!("could not open the browser: {error}"))
+}
+
+/// Download the latest version, check its signature, install it and start
+/// Regards again: the person asked. On Windows the installer takes over and
+/// the app ends; elsewhere the app starts again once its files are replaced.
+/// `update_progress` tells how far the download is.
+#[tauri::command]
+pub(crate) async fn update_install(app: AppHandle) -> Result<(), String> {
+    if !can_install() {
+        return Err("this copy of Regards can't install updates by itself".to_owned());
+    }
+    let failed = |error: tauri_plugin_updater::Error| format!("could not install the update: {error}");
+    let update = app
+        .updater()
+        .map_err(failed)?
+        .check()
+        .await
+        .map_err(failed)?
+        .ok_or("no update was found")?;
+    let mut received = 0u64;
+    let progress = app.clone();
+    update
+        .download_and_install(
+            move |chunk, total| {
+                received += chunk as u64;
+                let _ = progress.emit("update_progress", Progress { received, total });
+            },
+            || {},
+        )
+        .await
+        .map_err(failed)?;
+    app.restart()
 }
 
 #[cfg(test)]
