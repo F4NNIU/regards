@@ -7,7 +7,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io), certific
 ## What is signed
 
 On Windows:
-- the installer, `Regards_<version>_x64-setup.exe`;
+- the installers, `Regards_<version>_x64-setup.exe` and `Regards_<version>_arm64-setup.exe`;
 - the programs it installs: the app (`regards-desktop.exe`) and the `regards` program (the daemon, the CLI and the MCP server).
 
 They are signed only when they come from this repository:

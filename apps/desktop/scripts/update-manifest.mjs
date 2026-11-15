@@ -19,14 +19,25 @@ import { fileURLToPath } from "node:url";
 // from a .deb or .rpm asks for its own kind first.
 const FILES = [
   [/_x64-setup\.exe$/, ["windows-x86_64-nsis", "windows-x86_64"]],
+  [/_arm64-setup\.exe$/, ["windows-aarch64-nsis", "windows-aarch64"]],
   [/_aarch64\.app\.tar\.gz$/, ["darwin-aarch64-app", "darwin-aarch64"]],
   [/_x64\.app\.tar\.gz$/, ["darwin-x86_64-app", "darwin-x86_64"]],
   [/_amd64\.AppImage$/, ["linux-x86_64-appimage", "linux-x86_64"]],
   [/_amd64\.deb$/, ["linux-x86_64-deb"]],
   [/\.x86_64\.rpm$/, ["linux-x86_64-rpm"]],
+  [/_aarch64\.AppImage$/, ["linux-aarch64-appimage", "linux-aarch64"]],
+  [/_arm64\.deb$/, ["linux-aarch64-deb"]],
+  [/\.aarch64\.rpm$/, ["linux-aarch64-rpm"]],
 ];
 // Without these, some installed copies could not update: no manifest then.
-const REQUIRED = ["windows-x86_64", "darwin-aarch64", "darwin-x86_64", "linux-x86_64"];
+const REQUIRED = [
+  "windows-x86_64",
+  "windows-aarch64",
+  "darwin-aarch64",
+  "darwin-x86_64",
+  "linux-x86_64",
+  "linux-aarch64",
+];
 
 /**
  * The manifest for `version`, from the signatures: `{ "<file>.sig": "<its text>" }`.

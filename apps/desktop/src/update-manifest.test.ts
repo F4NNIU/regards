@@ -10,6 +10,10 @@ const signatures = {
   "Regards_0.4.0_amd64.AppImage.sig": "appimage",
   "Regards_0.4.0_amd64.deb.sig": "deb",
   "Regards-0.4.0-1.x86_64.rpm.sig": "rpm",
+  "Regards_0.4.0_arm64-setup.exe.sig": "win-arm",
+  "Regards_0.4.0_aarch64.AppImage.sig": "appimage-arm",
+  "Regards_0.4.0_arm64.deb.sig": "deb-arm",
+  "Regards-0.4.0-1.aarch64.rpm.sig": "rpm-arm",
 };
 
 describe("the update manifest of a release", () => {
@@ -25,6 +29,12 @@ describe("the update manifest of a release", () => {
     expect(made.platforms["linux-x86_64"].signature).toBe("appimage");
     expect(made.platforms["linux-x86_64-deb"].url).toBe(`${base}/Regards_0.4.0_amd64.deb`);
     expect(made.platforms["linux-x86_64-rpm"].url).toBe(`${base}/Regards-0.4.0-1.x86_64.rpm`);
+    // ARM64 computers get their own files, never the x64 ones.
+    expect(made.platforms["windows-aarch64"].url).toBe(`${base}/Regards_0.4.0_arm64-setup.exe`);
+    expect(made.platforms["windows-aarch64-nsis"].signature).toBe("win-arm");
+    expect(made.platforms["linux-aarch64"].url).toBe(`${base}/Regards_0.4.0_aarch64.AppImage`);
+    expect(made.platforms["linux-aarch64-deb"].url).toBe(`${base}/Regards_0.4.0_arm64.deb`);
+    expect(made.platforms["linux-aarch64-rpm"].url).toBe(`${base}/Regards-0.4.0-1.aarch64.rpm`);
   });
 
   it("does without the packages, but not without a system", () => {

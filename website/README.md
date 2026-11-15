@@ -27,6 +27,9 @@ What the build fills in:
   GitHub for each one; a file that is not published yet (the release is still
   a draft) links to the releases page instead, so deploy the site again once
   the release is published.
+- `{{dl_windows_arm}}`, `{{dl_deb_arm}}`, `{{dl_rpm_arm}}`, `{{dl_appimage_arm}}`: the
+  ARM64 installers, each with `{{…_off}}` inside its link's tag: the link is
+  left out of the page (`hidden`) while its file is not published.
 - `{{releases}}`: the latest GitHub release, the fallback above.
 
 ## Keep it true

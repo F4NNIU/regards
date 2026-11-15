@@ -169,12 +169,21 @@ jobs:
         include:
           - name: Windows
             os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - name: Windows ARM64
+            os: windows-11-arm
+            target: aarch64-pc-windows-msvc
           # One Mac is enough here: the release builds Apple silicon and Intel.
           - name: macOS
             os: macos-latest
+            target: aarch64-apple-darwin
           # As the release: the oldest supported Ubuntu.
           - name: Linux
             os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - name: Linux ARM64
+            os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-gnu
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     env:
@@ -188,9 +197,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # stable branch, 2026-10-09
         with:
           toolchain: stable
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          key: bundle
+          key: bundle-${{ matrix.target }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
@@ -214,11 +224,11 @@ jobs:
         run: |
           npx tauri signer generate --ci -w "$RUNNER_TEMP/throwaway.key" > /dev/null
           export TAURI_SIGNING_PRIVATE_KEY="$RUNNER_TEMP/throwaway.key" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
-          npm run release -- --config src-tauri/tauri.updater.json
+          npm run release -- --config src-tauri/tauri.updater.json --target ${{ matrix.target }}
       - name: The installers and their update files are there
         shell: bash
         run: |
-          cd target/release/bundle
+          cd "target/${{ matrix.target }}/release/bundle"
           ls -l */ | grep -v '^total'
           shopt -s nullglob
           need() { local found=($1); [ ${#found[@]} -gt 0 ] || { echo "::error::missing: $1"; missing=1; }; }
@@ -232,5 +242,6 @@ jobs:
       - name: The Mac app is signed, ad hoc
         if: runner.os == 'macOS'
         run: |
-          codesign --verify --deep --strict --verbose=2 target/release/bundle/macos/Regards.app
-          codesign --display --verbose=2 target/release/bundle/macos/Regards.app 2>&1 | grep -i "Signature=adhoc"
+          app="target/${{ matrix.target }}/release/bundle/macos/Regards.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign --display --verbose=2 "$app" 2>&1 | grep -i "Signature=adhoc"
