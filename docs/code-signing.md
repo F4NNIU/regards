@@ -16,7 +16,7 @@ They are signed only when they come from this repository:
 
 The macOS and Linux builds are not signed (see [releasing](releasing.md)).
 
-**Checking a download:** right-click the installer › *Properties* › *Digital Signatures*. The signer is *SignPath Foundation*.
+**Checking a download:** right-click the installer › *Properties* › *Digital Signatures*. The signer is *SignPath Foundation*. On any system, signed or not, a download can also be checked against the record of where it was built ([releasing](releasing.md#checking-where-a-download-was-built)).
 
 ## Team roles
 
