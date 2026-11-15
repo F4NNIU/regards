@@ -29,3 +29,11 @@ Var RegardsStopExit
     Pop $RegardsStopExit
   ${EndIf}
 !macroend
+
+; Up to 0.3.0 the installer had no publisher name, and kept its notes (where
+; Regards is installed, the installer's language) under the key below. They
+; are now under the publisher's name: the old ones go.
+!macro NSIS_HOOK_POSTINSTALL
+  DeleteRegKey HKCU "Software\regards\Regards"
+  DeleteRegKey /ifempty HKCU "Software\regards"
+!macroend

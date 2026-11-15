@@ -29,7 +29,7 @@ Development builds don't need any of this: Cargo builds `regards` into the same 
    - checks that the tag matches the version;
    - creates a **draft** release;
    - builds:
-     - **Windows x64:** the NSIS installer. Its [hooks](../apps/desktop/src-tauri/windows/hooks.nsh) run `regards daemon stop` before files are replaced or removed, because in background mode the daemon keeps running, and Windows won't replace a running program. An MSI would need the same, so none is built;
+     - **Windows x64:** the NSIS installer. Its [hooks](../apps/desktop/src-tauri/windows/hooks.nsh) run `regards daemon stop` before files are replaced or removed, because in background mode the daemon keeps running, and Windows won't replace a running program. An MSI would need the same, so none is built. The installer speaks English and French, and follows the language of Windows;
      - **macOS:** Apple silicon and Intel, as DMG;
      - **Linux x64:** deb, rpm and AppImage, built on Ubuntu 22.04 so they run on more systems;
    - uploads the bundles to the draft.
