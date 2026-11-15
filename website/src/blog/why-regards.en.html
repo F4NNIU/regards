@@ -1,26 +1,26 @@
 <p>“The best” is easy to say and usually means nothing. So here are seven reasons, and each one is something you can check for yourself: a number we measured, a file you can read, or a thing you can try in the first five minutes.</p>
 
 <h2>1. It is the fastest</h2>
-<p>Regards shows your mail 0.89 seconds after you click. We timed three other popular desktop mail apps on the same computer with the same 20,000 messages: they took 1.48, 1.90 and 5.36 seconds.</p>
+<p>Regards shows your mail 0.73 seconds after you click. We timed three other popular desktop mail apps on the same computer with the same 20,000 messages: they took 1.21, 1.49 and 5.50 seconds.</p>
 
 <div class="wide bars">
   <h3>From the click to your mail</h3>
   <p>Seconds until the window shows your mail. Median of ten launches. Shorter is better.</p>
-  <div class="bar me"><span>Regards</span><b>0.89 s</b><i style="--w:15.8%"></i></div>
-  <div class="bar"><span>Mailspring</span><b>1.48 s</b><i style="--w:26.4%"></i></div>
-  <div class="bar"><span>Thunderbird</span><b>1.90 s</b><i style="--w:33.9%"></i></div>
-  <div class="bar"><span>Spark</span><b>5.36 s</b><i style="--w:95.7%"></i></div>
+  <div class="bar me"><span>Regards</span><b>0.73 s</b><i style="--w:13.0%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>1.21 s</b><i style="--w:21.6%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>1.49 s</b><i style="--w:26.6%"></i></div>
+  <div class="bar"><span>Spark</span><b>5.50 s</b><i style="--w:98.2%"></i></div>
 </div>
 
 <p>It stays fast when your mailbox is huge: on 100,000 messages, the slowest search we tried answers in 38 milliseconds. <a href="{{blog}}opens-in-0-89-seconds/">All the numbers are here.</a></p>
 
 <h2>2. It is the lightest</h2>
-<p>Regards is built in Rust and ships no web browser inside, so it installs in 37 MB where the others need between 361 and 850. It runs in 124 MB of memory where they need between 314 and 449. It leaves your computer to you. <a href="{{blog}}why-37-mb/">Here is how that is possible.</a></p>
+<p>Regards is built in Rust and ships no web browser inside, so it installs in 39 MB where the others need between 361 and 850. It runs in 120 MB of memory where they need between 299 and 470. It leaves your computer to you. <a href="{{blog}}why-37-mb/">Here is how that is possible.</a></p>
 
 <div class="wide stats">
   <div><strong>1.7×</strong><b>faster to your mail</b>than the next best app</div>
   <div><strong>2.5×</strong><b>less memory</b>than the next best app</div>
-  <div><strong>10×</strong><b>smaller install</b>than the next best app</div>
+  <div><strong>9×</strong><b>smaller install</b>than the next best app</div>
 </div>
 
 <h2>3. Your AI agent does the work</h2>
@@ -49,7 +49,7 @@
 </ul>
 
 <h2>The honest part</h2>
-<p>Regards is young: this is version {{version}}. The installers are not signed yet, so your system shows a warning the first time. Our speed test covers Windows so far, and there is one line in it we do not win yet. We publish that too.</p>
+<p>Regards is young: this is version {{version}}. The installers are not signed yet, so your system shows a warning the first time. Our speed test covers Windows so far. On its first run there was one line Regards lost. We published it, fixed it and measured again.</p>
 <p>We think that is part of being the best: telling you exactly where things stand, and letting you check. Download it, give it five minutes, and decide for yourself.</p>
 
-<p class="fine">Speed and size were measured on 13 and 15 November 2026 on Windows 11, each app with one account holding the same 20,000 messages: Regards 0.3.0 built from source, Mailspring 1.26.2, Thunderbird 161.0 beta, Spark 3.32.4. The search figure is Regards’ mail engine alone on 100,000 messages. Method and raw results are in the <a href="https://github.com/lucienPochon/regards/tree/main/bench">repository</a>.</p>
+<p class="fine">Speed and size were measured on 15 November 2026 on Windows 11 (AMD Ryzen 7 5800X, 32 GB of memory), each app with one account holding the same 20,000 messages: Regards 0.4.0 as published, Mailspring 1.26.2, Thunderbird 161.0 beta, Spark 3.32.4. Nobody was using the computer during the run, but two other mail apps were open in another user’s session. Thunderbird was measured in its beta version because that is where the test account is. The search figure is Regards’ mail engine alone on 100,000 messages. Method and raw results are in the <a href="https://github.com/lucienPochon/regards/tree/main/bench">repository</a>.</p>

@@ -1,26 +1,26 @@
 <p>« La meilleure », c’est facile à dire et cela ne veut en général rien dire. Voici donc sept raisons, et chacune est quelque chose que vous pouvez vérifier vous-même : un chiffre que nous avons mesuré, un fichier que vous pouvez lire, ou une chose à essayer dans les cinq premières minutes.</p>
 
 <h2>1. C’est la plus rapide</h2>
-<p>Regards affiche vos e-mails 0,89 seconde après le clic. Nous avons chronométré trois autres applications e-mail connues sur le même ordinateur, avec les mêmes 20 000 messages : il leur a fallu 1,48, 1,90 et 5,36 secondes.</p>
+<p>Regards affiche vos e-mails 0,73 seconde après le clic. Nous avons chronométré trois autres applications e-mail connues sur le même ordinateur, avec les mêmes 20 000 messages : il leur a fallu 1,21, 1,49 et 5,50 secondes.</p>
 
 <div class="wide bars">
   <h3>Du clic à vos e-mails</h3>
   <p>Secondes avant que la fenêtre affiche vos e-mails. Médiane de dix lancements. Plus court, c’est mieux.</p>
-  <div class="bar me"><span>Regards</span><b>0,89 s</b><i style="--w:15.8%"></i></div>
-  <div class="bar"><span>Mailspring</span><b>1,48 s</b><i style="--w:26.4%"></i></div>
-  <div class="bar"><span>Thunderbird</span><b>1,90 s</b><i style="--w:33.9%"></i></div>
-  <div class="bar"><span>Spark</span><b>5,36 s</b><i style="--w:95.7%"></i></div>
+  <div class="bar me"><span>Regards</span><b>0,73 s</b><i style="--w:13.0%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>1,21 s</b><i style="--w:21.6%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>1,49 s</b><i style="--w:26.6%"></i></div>
+  <div class="bar"><span>Spark</span><b>5,50 s</b><i style="--w:98.2%"></i></div>
 </div>
 
 <p>Elle reste rapide quand votre boîte est énorme : sur 100 000 messages, la recherche la plus lente que nous ayons essayée répond en 38 millisecondes. <a href="{{blog}}opens-in-0-89-seconds/">Tous les chiffres sont ici.</a></p>
 
 <h2>2. C’est la plus légère</h2>
-<p>Regards est construit en Rust et n’embarque aucun navigateur web : il s’installe en 37 Mo là où les autres en demandent entre 361 et 850. Il tourne dans 124 Mo de mémoire là où il leur en faut entre 314 et 449. Il vous laisse votre ordinateur. <a href="{{blog}}why-37-mb/">Voici comment c’est possible.</a></p>
+<p>Regards est construit en Rust et n’embarque aucun navigateur web : il s’installe en 39 Mo là où les autres en demandent entre 361 et 850. Il tourne dans 120 Mo de mémoire là où il leur en faut entre 299 et 470. Il vous laisse votre ordinateur. <a href="{{blog}}why-37-mb/">Voici comment c’est possible.</a></p>
 
 <div class="wide stats">
   <div><strong>1,7×</strong><b>plus rapide à afficher vos e-mails</b>que la suivante</div>
   <div><strong>2,5×</strong><b>moins de mémoire</b>que la suivante</div>
-  <div><strong>10×</strong><b>plus petite à installer</b>que la suivante</div>
+  <div><strong>9×</strong><b>plus petite à installer</b>que la suivante</div>
 </div>
 
 <h2>3. Votre agent IA fait le travail</h2>
@@ -49,7 +49,7 @@
 </ul>
 
 <h2>La partie honnête</h2>
-<p>Regards est jeune : c’est la version {{version}}. Les installateurs ne sont pas encore signés, et votre système affiche donc un avertissement la première fois. Notre test de vitesse ne couvre pour l’instant que Windows, et il y a une ligne que nous n’y gagnons pas encore. Nous la publions aussi.</p>
+<p>Regards est jeune : c’est la version {{version}}. Les installateurs ne sont pas encore signés, et votre système affiche donc un avertissement la première fois. Notre test de vitesse ne couvre pour l’instant que Windows. Au premier essai, il y avait une ligne que Regards perdait. Nous l’avons publiée, corrigée et mesurée à nouveau.</p>
 <p>Nous pensons que cela fait partie d’être la meilleure : vous dire exactement où en sont les choses, et vous laisser vérifier. Téléchargez-la, donnez-lui cinq minutes, et jugez par vous-même.</p>
 
-<p class="fine">La vitesse et la taille ont été mesurées les 13 et 15 novembre 2026 sous Windows 11, chaque application avec un seul compte contenant les mêmes 20 000 messages : Regards 0.3.0 compilé depuis les sources, Mailspring 1.26.2, Thunderbird 161.0 bêta, Spark 3.32.4. Le chiffre de recherche est celui du moteur de messagerie de Regards seul, sur 100 000 messages. La méthode et les résultats bruts sont dans le <a href="https://github.com/lucienPochon/regards/tree/main/bench">dépôt</a>.</p>
+<p class="fine">La vitesse et la taille ont été mesurées le 15 novembre 2026 sous Windows 11 (AMD Ryzen 7 5800X, 32 Go de mémoire), chaque application avec un seul compte contenant les mêmes 20 000 messages : Regards 0.4.0 tel que publié, Mailspring 1.26.2, Thunderbird 161.0 bêta, Spark 3.32.4. Personne n’utilisait l’ordinateur pendant l’essai, mais deux autres applications e-mail étaient ouvertes dans la session d’un autre utilisateur. Thunderbird a été mesuré dans sa version bêta, parce que c’est là que se trouve le compte de test. Le chiffre de recherche est celui du moteur de messagerie de Regards seul, sur 100 000 messages. La méthode et les résultats bruts sont dans le <a href="https://github.com/lucienPochon/regards/tree/main/bench">dépôt</a>.</p>

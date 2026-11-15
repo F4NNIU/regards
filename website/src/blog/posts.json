@@ -4,15 +4,15 @@
     "date": "2026-11-15",
     "en": {
       "kicker": "Speed",
-      "title": "Regards opens in 0.89 seconds. Here is how.",
-      "heading": "Regards opens in <em>0.89 seconds.</em> Here is how.",
-      "description": "We put Regards next to three popular desktop mail apps, gave them all the same 20,000 messages and timed everything. Regards came first in seven of eight measurements."
+      "title": "Regards opens in 0.73 seconds. Here is how.",
+      "heading": "Regards opens in <em>0.73 seconds.</em> Here is how.",
+      "description": "We put Regards next to three popular desktop mail apps, gave them all the same 20,000 messages and timed everything. Regards came first in all eight measurements."
     },
     "fr": {
       "kicker": "Vitesse",
-      "title": "Regards s’ouvre en 0,89 seconde. Voici comment.",
-      "heading": "Regards s’ouvre en <em>0,89 seconde.</em> Voici comment.",
-      "description": "Nous avons placé Regards à côté de trois applications e-mail connues, avec les mêmes 20 000 messages, et tout chronométré. Regards arrive premier sur sept mesures sur huit."
+      "title": "Regards s’ouvre en 0,73 seconde. Voici comment.",
+      "heading": "Regards s’ouvre en <em>0,73 seconde.</em> Voici comment.",
+      "description": "Nous avons placé Regards à côté de trois applications e-mail connues, avec les mêmes 20 000 messages, et tout chronométré. Regards arrive premier sur les huit mesures."
     }
   },
   {
@@ -52,14 +52,14 @@
     "date": "2026-11-15",
     "en": {
       "kicker": "Speed",
-      "title": "Why your mail app weighs 800 MB, and ours weighs 37",
-      "heading": "Why your mail app weighs 800 MB, and ours weighs <em>37.</em>",
+      "title": "Why your mail app weighs 800 MB, and ours weighs 39",
+      "heading": "Why your mail app weighs 800 MB, and ours weighs <em>39.</em>",
       "description": "What is inside a mail app’s installer, why most of it is a web browser, and how Regards does without."
     },
     "fr": {
       "kicker": "Vitesse",
-      "title": "Pourquoi votre application e-mail pèse 800 Mo, et la nôtre 37",
-      "heading": "Pourquoi votre application e-mail pèse 800 Mo, et la nôtre <em>37.</em>",
+      "title": "Pourquoi votre application e-mail pèse 800 Mo, et la nôtre 39",
+      "heading": "Pourquoi votre application e-mail pèse 800 Mo, et la nôtre <em>39.</em>",
       "description": "Ce que contient l’installateur d’une application e-mail, pourquoi c’est surtout un navigateur web, et comment Regards s’en passe."
     }
   },

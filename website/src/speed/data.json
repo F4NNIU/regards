@@ -1,9 +1,9 @@
 {
   "apps": [
-    { "name": "Regards", "version": { "en": "0.3.0 + fix", "fr": "0.3.0 + correctif" }, "window": 551, "drawn": 887, "quiet": 1615, "cpu": 2.08, "ram": 124, "idle": 0.31, "procs": 9, "data": 57, "install": 37 },
-    { "name": "Mailspring", "version": "1.26.2", "window": 1392, "drawn": 1478, "quiet": 2188, "cpu": 2.56, "ram": 369, "idle": 0.05, "procs": 8, "data": 128, "install": 850 },
-    { "name": "Thunderbird", "version": { "en": "161.0 beta", "fr": "161.0 bêta" }, "window": 876, "drawn": 1896, "quiet": 2581, "cpu": 3.81, "ram": 314, "idle": 1.77, "procs": 7, "data": 337, "install": 361 },
-    { "name": "Spark", "version": "3.32.4", "window": 5048, "drawn": 5360, "quiet": 6107, "cpu": 7.7, "ram": 449, "idle": 1.95, "procs": 7, "data": 130, "install": 691 }
+    { "name": "Regards", "version": "0.4.0", "window": 487, "drawn": 729, "quiet": 1070, "cpu": 1.92, "ram": 120, "idle": 0.05, "procs": 9, "data": 57, "install": 39 },
+    { "name": "Mailspring", "version": "1.26.2", "window": 1395, "drawn": 1485, "quiet": 1725, "cpu": 2.61, "ram": 369, "idle": 0.1, "procs": 8, "data": 128, "install": 850 },
+    { "name": "Thunderbird", "version": {"en": "161.0 beta", "fr": "161.0 bêta"}, "window": 760, "drawn": 1214, "quiet": 2380, "cpu": 2.98, "ram": 299, "idle": 2.53, "procs": 7, "data": 335, "install": 361 },
+    { "name": "Spark", "version": "3.32.4", "window": 5181, "drawn": 5502, "quiet": 6304, "cpu": 8.36, "ram": 470, "idle": 2.11, "procs": 7, "data": 134, "install": 691 }
   ],
   "scale": [[38, 0], [1.5, 1], [1.2, 1], [0.2, 1]]
 }
