@@ -44,6 +44,12 @@
     }
   },
   "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAyMzVGREZBOTVBQjAzNTMKUldSVEE2dVYrdjAxQWd6YzlsMkVuR2NabHZHUkRkdnRmbEwvN1IxTWQzWmRPZ21ObjZXY3U3blkK",
+      "endpoints": [
+        "https://github.com/lucienPochon/regards/releases/latest/download/latest.json"
+      ]
+    },
     "deep-link": {
       "desktop": {
         "schemes": [
