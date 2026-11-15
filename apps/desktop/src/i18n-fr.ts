@@ -547,6 +547,12 @@ export const FR: Record<string, Entry> = {
   "Undo": "Annuler",
   "Undone": "Annulé",
   "Nothing to undo": "Rien à annuler",
+  "Undone in part": "Annulé en partie",
+  "Undo expired": "Délai d’annulation dépassé",
+  "{count} changes could not be put back.": {
+    one: "{count} modification n’a pas pu être rétablie.",
+    other: "{count} modifications n’ont pas pu être rétablies.",
+  },
   "Nothing was set back: what it changed has since been changed again, moved or deleted for good.":
     "Rien n’a été rétabli : ce qui avait été modifié a depuis été modifié à nouveau, déplacé ou supprimé définitivement.",
   "{count} h left": "encore {count} h",

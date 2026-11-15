@@ -702,7 +702,11 @@ export function copyMessages(ids: number[], mailboxId: number): Promise<{ copied
 }
 
 /** Reverse a recent action. Each undo id works once, for a few minutes. */
-export function applyUndo(id: number): Promise<{ undone: number }> {
+/**
+ * `undone` counts what was put back; `skipped` what could not be (gone
+ * from the server, or changed again since), when the daemon says.
+ */
+export function applyUndo(id: number): Promise<{ undone: number; skipped?: number }> {
   return invoke("undo_apply", { id });
 }
 

@@ -461,6 +461,7 @@ function agentActivity(): AgentActivity[] {
     undoable: undo !== null && !agentUndone.has(undo),
     // What an agent did can be undone for a day.
     undo_until: undo !== null && !agentUndone.has(undo) ? at(minutesAgo) + 24 * 60 * 60_000 : null,
+    undo_state: undo === null ? null : agentUndone.has(undo) ? "used" : "open",
   });
   // A script on the command line ran while the assistant was connected: their requests interleave.
   return [
@@ -1689,7 +1690,7 @@ function handle(cmd: string, args: Args): unknown {
         if (agentUndone.has(args.id as number)) throw new Error("It is too late to undo that.");
         agentUndone.add(args.id as number);
         changed();
-        return { undone: args.id === 9001 ? 2 : 1 };
+        return { undone: args.id === 9001 ? 2 : 1, skipped: 0 };
       }
       const undo = undos.get(args.id as number);
       if (!undo) throw new Error("It is too late to undo that.");
