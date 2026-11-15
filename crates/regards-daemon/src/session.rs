@@ -880,7 +880,7 @@ impl Session {
                 if !self.is_ui() {
                     // Access first, so an account closed to agents says nothing of itself.
                     let account = self.allow_targets(Access::Triage, &params.ids).await?;
-                    labels::for_agents(&self.state, &account).await?;
+                    labels::for_agents(&self.state, &account, !params.remove.is_empty()).await?;
                     self.allow_change(Access::Triage, &params.ids, request).await?;
                 }
                 labels::set(&self.state, params).await

@@ -8,6 +8,7 @@
 use crate::State;
 use crate::actions::check_count;
 use crate::compose::now_ms;
+use regards_core::mailbox::Role;
 use regards_ipc::protocol::{
     LabelsResult, MessageIds, MessageLabels, RpcError, SetLabelsParams, SetLabelsResult, codes,
 };
@@ -38,28 +39,47 @@ pub(crate) async fn labels(state: &State, params: MessageIds) -> Result<Value, R
     }))
 }
 
-/// Whether a server with these capabilities has labels.
-fn has_labels(capabilities: &[String]) -> bool {
-    capabilities.iter().any(|capability| capability == GMAIL)
+/// Why an agent may not make this label change on an account, if so.
+///
+/// - Labels are Gmail's: elsewhere the copy in a folder may be the only one,
+///   and "removing the label" would delete the mail for good.
+/// - On Gmail, a message stays in All Mail when its label goes. Regards
+///   only counts on that while it sees All Mail: hidden from mail apps,
+///   Gmail may be set to delete a message that leaves its last folder.
+fn agent_refusal(capabilities: &[String], sees_all_mail: bool, removing: bool) -> Option<&'static str> {
+    if !capabilities.iter().any(|capability| capability == GMAIL) {
+        return Some("this account has no labels (only Gmail accounts do): move the message to a folder instead");
+    }
+    if removing && !sees_all_mail {
+        return Some(
+            "Regards does not see this account's All Mail folder, so it cannot be sure a message stays once \
+             its label is removed. Its owner can remove the label in the app, or show All Mail to mail apps \
+             in Gmail's settings",
+        );
+    }
+    None
 }
 
-/// An agent changes labels only where folders are labels (Gmail). Elsewhere
-/// the copy in a folder may be the only one, and "removing the label" would
-/// delete the mail for good.
-pub(crate) async fn for_agents(state: &State, account_id: &str) -> Result<(), RpcError> {
+/// An agent changes labels only where that cannot lose mail ([`agent_refusal`]).
+pub(crate) async fn for_agents(state: &State, account_id: &str, removing: bool) -> Result<(), RpcError> {
     let id = account_id.to_owned();
-    let labelled = state
+    let refusal = state
         .store
-        .read(move |conn| Ok(accounts::get(conn, &id)?.is_some_and(|account| has_labels(&account.imap_capabilities))))
+        .read(move |conn| {
+            let capabilities = accounts::get(conn, &id)?
+                .map(|account| account.imap_capabilities)
+                .unwrap_or_default();
+            let sees_all_mail = mailboxes::list(conn, &id)?
+                .iter()
+                .any(|folder| folder.role == Some(Role::All));
+            Ok(agent_refusal(&capabilities, sees_all_mail, removing))
+        })
         .await
         .map_err(crate::session::internal)?;
-    if labelled {
-        return Ok(());
+    match refusal {
+        Some(message) => Err(RpcError::new(codes::CONFLICT, message)),
+        None => Ok(()),
     }
-    Err(RpcError::new(
-        codes::CONFLICT,
-        "this account has no labels (only Gmail accounts do): move the message to a folder instead",
-    ))
 }
 
 /// `message.set_labels`: the same labels added to, and removed from, each message.
@@ -313,12 +333,29 @@ fn conflict(error: StoreError) -> RpcError {
 
 #[cfg(test)]
 mod tests {
-    use super::has_labels;
+    use super::agent_refusal;
 
     #[test]
-    fn only_gmail_has_labels() {
+    fn agents_label_only_where_no_mail_can_be_lost() {
         let server = |capabilities: &[&str]| -> Vec<String> { capabilities.iter().map(|c| (*c).to_owned()).collect() };
-        assert!(has_labels(&server(&["IMAP4rev1", "X-GM-EXT-1", "MOVE"])));
-        assert!(!has_labels(&server(&["IMAP4rev1", "MOVE", "UIDPLUS"])));
+        let gmail = server(&["IMAP4rev1", "X-GM-EXT-1", "MOVE"]);
+        let other = server(&["IMAP4rev1", "MOVE", "UIDPLUS"]);
+        // Gmail, All Mail in sight: add and remove.
+        assert_eq!(agent_refusal(&gmail, true, false), None);
+        assert_eq!(agent_refusal(&gmail, true, true), None);
+        // All Mail hidden: adding loses nothing, removing might.
+        assert_eq!(agent_refusal(&gmail, false, false), None);
+        assert!(agent_refusal(&gmail, false, true).unwrap().contains("All Mail"));
+        // Not Gmail: a folder's copy may be the only one.
+        assert!(
+            agent_refusal(&other, true, false)
+                .unwrap()
+                .contains("only Gmail accounts")
+        );
+        assert!(
+            agent_refusal(&other, true, true)
+                .unwrap()
+                .contains("only Gmail accounts")
+        );
     }
 }
