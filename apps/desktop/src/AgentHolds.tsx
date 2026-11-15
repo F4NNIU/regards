@@ -37,6 +37,39 @@ const until = (at: number) => {
   return hours >= 1 ? t("in {hours} h", { hours }) : t("within the hour");
 };
 
+/** How long ago, within the day a repeat is looked for: "just now", "5 min ago", "3 h ago". */
+function ago(at: number, now: number): string {
+  const minutes = Math.floor((now - at) / 60_000);
+  if (minutes < 1) return t("just now");
+  if (minutes < 60) return t("{count} min ago", { count: minutes });
+  return t("{count} h ago", { count: Math.floor(minutes / 60) });
+}
+
+/**
+ * The warning on a send an agent already asked for: when the same message
+ * was asked before and what became of that request, so it is not sent twice
+ * unseen. Nothing when it repeats nothing.
+ */
+export function repeatWarning(repeats: Hold["repeats"], now = Date.now()): string | null {
+  if (!repeats) return null;
+  const when = ago(repeats.asked_at, now);
+  switch (repeats.status) {
+    case "approved":
+      return t("The same message was already asked {when}, and you approved it. Sending this one sends it a second time.", { when });
+    case "pending":
+      return t("The same message was already asked {when} and is still waiting for you. Sending both sends it twice.", { when });
+    case "rejected":
+      return t("The same message was already asked {when}, and you rejected it.", { when });
+    case "expired":
+      return t("The same message was already asked {when}, and that request expired undecided.", { when });
+    case "failed":
+      return t("The same message was already asked {when} and approved, but it could not be sent.", { when });
+    default:
+      // No request it waited as: it went by itself, after the account's undo window.
+      return t("The same message already went {when}, without waiting for you. Sending this one sends it a second time.", { when });
+  }
+}
+
 /**
  * Settings › Agents: what agents asked for and is waiting for the person:
  * every send, changes to more than 50 messages, deleting for good. Each can
@@ -130,6 +163,8 @@ function HoldCard({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const suggested = heldText(hold);
+  // The same message was asked before: said first, above the draft.
+  const repeated = repeatWarning(hold.repeats);
   // A suggested voice, as the person edits it before approving.
   const [voice, setVoice] = useState<string | null>(null);
   useEffect(() => {
@@ -172,6 +207,12 @@ function HoldCard({
           </span>
         </span>
       </div>
+      {repeated !== null && (
+        <p className="hold-repeat" role="alert">
+          <Icon name="alert" size={14} />
+          <span>{repeated}</span>
+        </p>
+      )}
       {hold.reason === "bulk" && (
         <p className="hold-why muted">{t("More than 50 messages at once: an agent needs you for that.")}</p>
       )}
