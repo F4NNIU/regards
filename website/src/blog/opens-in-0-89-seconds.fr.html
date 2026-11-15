@@ -1,0 +1,55 @@
+<div class="wide bars">
+  <h3>Du clic à vos e-mails</h3>
+  <p>Secondes avant que la fenêtre affiche vos e-mails. Médiane de dix lancements. Plus court, c’est mieux.</p>
+  <div class="bar me"><span>Regards</span><b>0,89 s</b><i style="--w:15.8%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>1,48 s</b><i style="--w:26.4%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>1,90 s</b><i style="--w:33.9%"></i></div>
+  <div class="bar"><span>Spark</span><b>5,36 s</b><i style="--w:95.7%"></i></div>
+</div>
+
+<h2>Premier à afficher vos e-mails, et plus léger partout</h2>
+<p>Regards affiche votre boîte de réception 0,89 seconde après le clic. L’application suivante, Mailspring, a besoin de 1,48 seconde. Thunderbird en prend 1,90 et Spark 5,36. Regards est ouvert depuis plus de quatre secondes quand la plus lente affiche sa fenêtre.</p>
+<p>Le lancement n’est qu’une ligne du tableau. Regards est aussi la plus légère des quatre, sur toutes les mesures de poids :</p>
+
+<div class="wide stats">
+  <div><strong>2,5×</strong><b>moins de mémoire</b>124 Mo, contre 314 Mo pour la suivante</div>
+  <div><strong>10×</strong><b>plus petite à installer</b>37 Mo, contre 361 Mo pour la suivante</div>
+  <div><strong>1,7×</strong><b>plus rapide à afficher vos e-mails</b>0,89 s, contre 1,48 s pour la suivante</div>
+</div>
+
+<h2>Pourquoi c’est aussi rapide</h2>
+<p>Il n’y a pas d’astuce. Tout vient de quatre décisions prises avant de dessiner le premier écran.</p>
+<p><b>Le moteur est écrit en Rust.</b> Tout ce qui parle à votre serveur de messagerie, enregistre les messages et les recherche est du code natif. Aucun interpréteur à démarrer au lancement, aucune pause pour ranger la mémoire pendant que vous faites défiler.</p>
+<p><b>Il n’y a pas de navigateur à l’intérieur.</b> La plupart des applications e-mail embarquent un moteur de navigateur complet dans leur installateur. Regards dessine sa fenêtre avec celui qui est déjà fourni par votre système. <a href="{{blog}}why-37-mb/">Nous n’installons que deux petits programmes.</a></p>
+<p><b>Votre boîte de réception est déjà sur votre ordinateur.</b> Regards garde une base de données locale avec l’expéditeur, l’objet et les premières lignes de chaque message : la liste est lue sur le disque dès que la fenêtre s’ouvre. Sur une boîte de 100 000 messages, <a href="{{blog}}searching-100000-messages/">la recherche la plus lente que nous ayons essayée répond en 38 millisecondes.</a></p>
+<p><b>Il attend au lieu de demander.</b> Regards laisse le serveur annoncer les nouveaux messages. Il ne se réveille pas toutes les quelques secondes pour vérifier.</p>
+
+<h2>Ce que le chronomètre a trouvé</h2>
+<p>Le premier essai n’a pas apporté que de bonnes nouvelles. Fenêtre ouverte et sans rien faire, Regards utilisait plus de 3 % d’un cœur de processeur, quand Mailspring en utilisait 0,05 %. Une application e-mail au repos devrait dormir : nous avons cherché, et trouvé deux bugs.</p>
+
+<div class="wide cards2">
+  <div><small>Bug 1 · la fenêtre</small><h3>Un indicateur que personne ne voyait</h3>Un indicateur de chargement placé tout en bas de la liste, hors de l’écran, ne s’arrêtait jamais de tourner. La fenêtre se redessinait soixante fois par seconde pour rien.<code>6,35 % → <b>0,31 %</b> d’un cœur</code></div>
+  <div><small>Bug 2 · le moteur</small><h3>Une question, 20 000 réponses</h3>Toutes les dix secondes, le moteur interrogeait sa base de données sur vos brouillons, et la base répondait en parcourant tous les messages enregistrés.<code>16 ms → <b>0,006 ms</b> par vérification</code></div>
+</div>
+
+<p>Les deux corrigés, le moteur seul utilise 0,00 % d’un cœur au repos et ne lit rien sur le disque. <a href="{{blog}}the-spinner-nobody-could-see/">L’histoire complète des deux bugs est ici.</a> Les corrections arrivent dans la prochaine version, chacune avec un test qui échoue si le problème revient.</p>
+
+<h2>Celle que nous ne gagnons pas encore</h2>
+<p>L’usage du processeur au repos. Fenêtre ouverte, Regards est à 0,31 % d’un cœur et Mailspring à 0,05 %. Les deux chiffres sont minuscules, et Regards bat déjà Thunderbird et Spark sur ce point, mais deuxième reste deuxième. La correction du moteur n’est pas encore dans ce chiffre. Nous mesurerons à nouveau avec la prochaine version et publierons le résultat, quel qu’il soit.</p>
+
+<h2>Tous les chiffres</h2>
+<div class="wide tbl"><table>
+  <thead><tr><th>Application</th><th>Fenêtre</th><th>E-mails à l’écran</th><th>Au calme</th><th>Processeur au démarrage</th><th>Mémoire</th><th>Processeur au repos</th><th>E-mails sur le disque</th><th>Installée</th></tr></thead>
+  <tbody>
+    <tr><th>Regards</th><td class="best">0,55 s</td><td class="best">0,89 s</td><td class="best">1,62 s</td><td class="best">2,1 s</td><td class="best">124 Mo</td><td>0,31 %</td><td class="best">57 Mo</td><td class="best">37 Mo</td></tr>
+    <tr><th>Mailspring</th><td>1,39 s</td><td>1,48 s</td><td>2,19 s</td><td>2,6 s</td><td>369 Mo</td><td class="best">0,05 %</td><td>128 Mo</td><td>850 Mo</td></tr>
+    <tr><th>Thunderbird</th><td>0,88 s</td><td>1,90 s</td><td>2,58 s</td><td>3,8 s</td><td>314 Mo</td><td>1,77 %</td><td>337 Mo</td><td>361 Mo</td></tr>
+    <tr><th>Spark</th><td>5,05 s</td><td>5,36 s</td><td>6,11 s</td><td>7,7 s</td><td>449 Mo</td><td>1,95 %</td><td>130 Mo</td><td>691 Mo</td></tr>
+  </tbody>
+</table></div>
+
+<h2>Vérifiez vous-même</h2>
+<p>Chaque application a été mesurée de l’extérieur, de la même façon, sur le même ordinateur, avec les mêmes e-mails. Le script, les règles et les résultats bruts sont dans le <a href="https://github.com/lucienPochon/regards/tree/main/bench">dépôt</a>, et <a href="{{blog}}how-to-benchmark-a-mail-app/">nous avons écrit comment nous avons fait, erreurs comprises.</a> Lancez-le sur votre machine et regardez ce que vous obtenez.</p>
+<p>Ensuite, nous chronométrons la recherche et l’ouverture d’un message dans les quatre applications, puis nous recommençons le tout sur macOS et Linux.</p>
+
+<p class="fine">Mesuré les 13 et 15 novembre 2026 sous Windows 11 (AMD Ryzen 7 5800X, 32 Go de mémoire), chaque application avec un seul compte contenant les mêmes 20 000 messages. Regards 0.3.0 compilé depuis les sources avec la correction de l’indicateur décrite ci-dessus ; Mailspring 1.26.2 ; Thunderbird 161.0 bêta ; Spark 3.32.4. Ce premier essai a été fait sur un ordinateur en cours d’utilisation, pas au calme, et sera refait à la prochaine version. La mémoire et le temps processeur comptent tous les processus d’une application, y compris la vue web du système avec laquelle Regards dessine. Sauf si vous lui demandez de télécharger d’avance les e-mails récents, Regards enregistre l’expéditeur, l’objet et les premières lignes de chaque message et va chercher le reste quand vous l’ouvrez, ce qui explique en grande partie qu’il prenne moins de place sur le disque.</p>

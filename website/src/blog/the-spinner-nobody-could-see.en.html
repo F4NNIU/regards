@@ -1,0 +1,36 @@
+<p>We ran our first benchmark expecting good news, and mostly got it. Regards opened faster than the three apps we compared it with and used far less memory. Then we read the last column.</p>
+<p>With its window open and nothing happening, Regards was using more than 3% of a processor core. Mailspring, in the same test, was using 0.05%. Sixty times less.</p>
+<p>Three percent sounds small. On a laptop it is the difference between a processor that sleeps and one that never does, all day, for an app that is doing nothing.</p>
+
+<h2>Looking for something that is not there</h2>
+<p>The mail engine was the first suspect, and it was innocent: its log showed it waiting quietly for the server. The work was happening in the window. But the window was not changing. Nothing moved on screen.</p>
+<p>So we asked the window itself which animations were running. There was exactly one: a small loading spinner at the very end of the message list, below the last message, far outside what was visible. It was there in case you scrolled to the bottom and more mail had to be fetched. It had been turning since launch.</p>
+<p>An animation you cannot see still costs. The window was preparing sixty new frames a second, every second, to rotate a circle nobody was looking at. We paused it and watched the processor.</p>
+
+<div class="wide cards2">
+  <div><small>Before</small><h3>The spinner always exists</h3>It sits at the end of the list and turns forever, on screen or not.<code>6.35 % of one core</code></div>
+  <div><small>After</small><h3>The spinner exists while loading</h3>It appears when a page of mail is being fetched, and is removed when the page arrives.<code><b>0.31 %</b> of one core</code></div>
+</div>
+
+<p>The fix is a few lines: the list now knows whether it is fetching, and only then draws the spinner. A test checks that the spinner is absent when nothing is loading.</p>
+
+<h2>The second bug, hiding behind the first</h2>
+<p>With the window quiet, the engine’s own cost became visible: 0.34% of a core, and bursts of reading from disk every ten seconds. On our own small mailboxes we had never seen it. On the benchmark’s 20,000 messages it was plain.</p>
+<p>Every ten seconds the engine asks its database one question: is any draft out of step with the server? There was one draft. The database answered by walking through all 20,000 stored messages to find the ones that matched it, reading megabytes from disk each time. The cost grew with the mailbox, so the people with the most mail paid the most.</p>
+<p>The question was fine. The order was wrong: the database started from the messages when it should have started from the drafts. One change tells it where to begin.</p>
+
+<div class="wide cards2">
+  <div><small>Before</small><h3>Start from every message</h3>Walk 20,000 messages, keep those that match a draft.<code>16 ms per check</code></div>
+  <div><small>After</small><h3>Start from the drafts</h3>Take the one draft, look up its messages directly.<code><b>0.006 ms</b> per check</code></div>
+</div>
+
+<p>After the change, the engine uses 0.00% of a core at rest and reads nothing from disk. A new test reads the database’s plan for that question and fails if it ever walks the whole mailbox again.</p>
+
+<h2>What we keep from this</h2>
+<ul>
+  <li><b>Measure at rest, not only at work.</b> Launch times get the attention. An app spends most of its life doing nothing, and that is where it costs you battery.</li>
+  <li><b>Test on a big mailbox.</b> Both bugs were invisible on a small one. The benchmark uses 20,000 messages, and our own tests go to 100,000.</li>
+  <li><b>Turn each fix into a test.</b> A bug you only fix comes back. A bug you test for does not.</li>
+  <li><b>Publish the losses.</b> We still do not beat Mailspring at rest. Writing that down is what keeps us working on it.</li>
+</ul>
+<p>Both fixes ship in the next release of Regards. The numbers are in <a href="{{blog}}opens-in-0-89-seconds/">the full results.</a></p>

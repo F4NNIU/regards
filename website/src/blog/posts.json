@@ -1,0 +1,114 @@
+[
+  {
+    "slug": "opens-in-0-89-seconds",
+    "date": "2026-11-15",
+    "en": {
+      "kicker": "Speed",
+      "title": "Regards opens in 0.89 seconds. Here is how.",
+      "heading": "Regards opens in <em>0.89 seconds.</em> Here is how.",
+      "description": "We put Regards next to three popular desktop mail apps, gave them all the same 20,000 messages and timed everything. Regards came first in seven of eight measurements."
+    },
+    "fr": {
+      "kicker": "Vitesse",
+      "title": "Regards s’ouvre en 0,89 seconde. Voici comment.",
+      "heading": "Regards s’ouvre en <em>0,89 seconde.</em> Voici comment.",
+      "description": "Nous avons placé Regards à côté de trois applications e-mail connues, avec les mêmes 20 000 messages, et tout chronométré. Regards arrive premier sur sept mesures sur huit."
+    }
+  },
+  {
+    "slug": "why-regards",
+    "date": "2026-11-15",
+    "en": {
+      "kicker": "Why Regards",
+      "title": "Simply the best mail app. Here is why.",
+      "heading": "Simply the <em>best mail app.</em> Here is why.",
+      "description": "Faster, lighter, free, open, private, and the only one your AI agent can actually run. Seven reasons, each one checkable."
+    },
+    "fr": {
+      "kicker": "Pourquoi Regards",
+      "title": "Tout simplement la meilleure application e-mail. Voici pourquoi.",
+      "heading": "Tout simplement la <em>meilleure application e-mail.</em> Voici pourquoi.",
+      "description": "Plus rapide, plus légère, gratuite, ouverte, privée, et la seule que votre agent IA peut vraiment piloter. Sept raisons, toutes vérifiables."
+    }
+  },
+  {
+    "slug": "why-open-source",
+    "date": "2026-11-15",
+    "en": {
+      "kicker": "Open source",
+      "title": "Your mail app reads everything. You should be able to read it back.",
+      "heading": "Your mail app reads everything. You should be able to <em>read it back.</em>",
+      "description": "Why every line of Regards is public, what that changes for you, and why we would not build a mail app any other way."
+    },
+    "fr": {
+      "kicker": "Open source",
+      "title": "Votre application e-mail lit tout. Vous devriez pouvoir la lire aussi.",
+      "heading": "Votre application e-mail lit tout. Vous devriez pouvoir <em>la lire aussi.</em>",
+      "description": "Pourquoi chaque ligne de Regards est publique, ce que cela change pour vous, et pourquoi nous ne construirions pas une application e-mail autrement."
+    }
+  },
+  {
+    "slug": "why-37-mb",
+    "date": "2026-11-15",
+    "en": {
+      "kicker": "Speed",
+      "title": "Why your mail app weighs 800 MB, and ours weighs 37",
+      "heading": "Why your mail app weighs 800 MB, and ours weighs <em>37.</em>",
+      "description": "What is inside a mail app’s installer, why most of it is a web browser, and how Regards does without."
+    },
+    "fr": {
+      "kicker": "Vitesse",
+      "title": "Pourquoi votre application e-mail pèse 800 Mo, et la nôtre 37",
+      "heading": "Pourquoi votre application e-mail pèse 800 Mo, et la nôtre <em>37.</em>",
+      "description": "Ce que contient l’installateur d’une application e-mail, pourquoi c’est surtout un navigateur web, et comment Regards s’en passe."
+    }
+  },
+  {
+    "slug": "searching-100000-messages",
+    "date": "2026-11-15",
+    "en": {
+      "kicker": "Speed",
+      "title": "Searching 100,000 messages in 38 milliseconds",
+      "heading": "Searching 100,000 messages in <em>38 milliseconds.</em>",
+      "description": "How search works in Regards, and why it stays instant when your mailbox gets very large."
+    },
+    "fr": {
+      "kicker": "Vitesse",
+      "title": "Chercher dans 100 000 messages en 38 millisecondes",
+      "heading": "Chercher dans 100 000 messages en <em>38 millisecondes.</em>",
+      "description": "Comment fonctionne la recherche dans Regards, et pourquoi elle reste instantanée quand votre boîte devient très grande."
+    }
+  },
+  {
+    "slug": "the-spinner-nobody-could-see",
+    "date": "2026-11-15",
+    "en": {
+      "kicker": "Engineering",
+      "title": "The spinner nobody could see",
+      "heading": "The spinner <em>nobody could see.</em>",
+      "description": "An invisible animation was costing 6% of a processor core. How we found it, the second bug hiding behind it, and what both taught us."
+    },
+    "fr": {
+      "kicker": "Ingénierie",
+      "title": "L’indicateur de chargement que personne ne voyait",
+      "heading": "L’indicateur de chargement <em>que personne ne voyait.</em>",
+      "description": "Une animation invisible coûtait 6 % d’un cœur de processeur. Comment nous l’avons trouvée, le second bug caché derrière, et ce que les deux nous ont appris."
+    }
+  },
+  {
+    "slug": "how-to-benchmark-a-mail-app",
+    "date": "2026-11-15",
+    "en": {
+      "kicker": "Engineering",
+      "title": "How to benchmark a mail app honestly",
+      "heading": "How to benchmark a mail app <em>honestly.</em>",
+      "description": "Our six rules, the five mistakes we made while measuring, and how to run the same test on your own computer."
+    },
+    "fr": {
+      "kicker": "Ingénierie",
+      "title": "Comment comparer honnêtement des applications e-mail",
+      "heading": "Comment comparer <em>honnêtement</em> des applications e-mail.",
+      "description": "Nos six règles, les cinq erreurs que nous avons faites en mesurant, et comment lancer le même test sur votre ordinateur."
+    }
+  }
+]

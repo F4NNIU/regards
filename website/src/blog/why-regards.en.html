@@ -1,0 +1,55 @@
+<p>“The best” is easy to say and usually means nothing. So here are seven reasons, and each one is something you can check for yourself: a number we measured, a file you can read, or a thing you can try in the first five minutes.</p>
+
+<h2>1. It is the fastest</h2>
+<p>Regards shows your mail 0.89 seconds after you click. We timed three other popular desktop mail apps on the same computer with the same 20,000 messages: they took 1.48, 1.90 and 5.36 seconds.</p>
+
+<div class="wide bars">
+  <h3>From the click to your mail</h3>
+  <p>Seconds until the window shows your mail. Median of ten launches. Shorter is better.</p>
+  <div class="bar me"><span>Regards</span><b>0.89 s</b><i style="--w:15.8%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>1.48 s</b><i style="--w:26.4%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>1.90 s</b><i style="--w:33.9%"></i></div>
+  <div class="bar"><span>Spark</span><b>5.36 s</b><i style="--w:95.7%"></i></div>
+</div>
+
+<p>It stays fast when your mailbox is huge: on 100,000 messages, the slowest search we tried answers in 38 milliseconds. <a href="{{blog}}opens-in-0-89-seconds/">All the numbers are here.</a></p>
+
+<h2>2. It is the lightest</h2>
+<p>Regards is built in Rust and ships no web browser inside, so it installs in 37 MB where the others need between 361 and 850. It runs in 124 MB of memory where they need between 314 and 449. It leaves your computer to you. <a href="{{blog}}why-37-mb/">Here is how that is possible.</a></p>
+
+<div class="wide stats">
+  <div><strong>1.7×</strong><b>faster to your mail</b>than the next best app</div>
+  <div><strong>2.5×</strong><b>less memory</b>than the next best app</div>
+  <div><strong>10×</strong><b>smaller install</b>than the next best app</div>
+</div>
+
+<h2>3. Your AI agent does the work</h2>
+<p>Other mail apps add an assistant that summarises. Regards lets the agent you already use, such as Claude, Codex or Cursor, actually run your mailbox: clear the newsletters, file the invoices, snooze what can wait, draft the replies.</p>
+<p>You stay in charge. You choose how much the agent may do, from nothing to reading, organising or sending. Nothing is ever sent without your approval, you see everything it did, and you can undo all of it.</p>
+
+<h2>4. Your mail stays yours</h2>
+<p>Mail goes between your computer and your mail provider, and nowhere else. Regards has no servers, no telemetry and no account to create. We could not read your mail if we wanted to.</p>
+
+<h2>5. It is free. All of it.</h2>
+<p>Every feature, all your addresses, on every system. No trial, no ads, no monthly fee for AI. One optional paid service is planned for later, and the app itself stays free.</p>
+
+<h2>6. It is open source</h2>
+<p>Every line is public under the Apache-2.0 and MIT licences. You can read what it does, build it yourself, and keep it for good. <a href="{{blog}}why-open-source/">Why that matters for a mail app.</a></p>
+
+<h2>7. It is made to be lived in</h2>
+<p>You spend hours a day in your mail. Regards is calm to look at, in light and in dark, and quick under your hands:</p>
+<ul>
+  <li><b>Sorted for you,</b> by priority, category or date, with people first.</li>
+  <li><b>New senders ask first.</b> A stranger’s first message waits for you to accept or block it.</li>
+  <li><b>Snooze, reminders, send later, undo send.</b></li>
+  <li><b>Undo everywhere.</b> Every action, yours or your agent’s, can be taken back.</li>
+  <li><b>Every key is yours.</b> Do everything from the keyboard and change any shortcut.</li>
+  <li><b>All your accounts</b> in one window, with the address you already have.</li>
+  <li><b>The same app</b> on Windows, macOS and Linux, in English and in French.</li>
+</ul>
+
+<h2>The honest part</h2>
+<p>Regards is young: this is version {{version}}. The installers are not signed yet, so your system shows a warning the first time. Our speed test covers Windows so far, and there is one line in it we do not win yet. We publish that too.</p>
+<p>We think that is part of being the best: telling you exactly where things stand, and letting you check. Download it, give it five minutes, and decide for yourself.</p>
+
+<p class="fine">Speed and size were measured on 13 and 15 November 2026 on Windows 11, each app with one account holding the same 20,000 messages: Regards 0.3.0 built from source, Mailspring 1.26.2, Thunderbird 161.0 beta, Spark 3.32.4. The search figure is Regards’ mail engine alone on 100,000 messages. Method and raw results are in the <a href="https://github.com/lucienPochon/regards/tree/main/bench">repository</a>.</p>

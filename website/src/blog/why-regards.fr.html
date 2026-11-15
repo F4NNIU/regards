@@ -1,0 +1,55 @@
+<p>« La meilleure », c’est facile à dire et cela ne veut en général rien dire. Voici donc sept raisons, et chacune est quelque chose que vous pouvez vérifier vous-même : un chiffre que nous avons mesuré, un fichier que vous pouvez lire, ou une chose à essayer dans les cinq premières minutes.</p>
+
+<h2>1. C’est la plus rapide</h2>
+<p>Regards affiche vos e-mails 0,89 seconde après le clic. Nous avons chronométré trois autres applications e-mail connues sur le même ordinateur, avec les mêmes 20 000 messages : il leur a fallu 1,48, 1,90 et 5,36 secondes.</p>
+
+<div class="wide bars">
+  <h3>Du clic à vos e-mails</h3>
+  <p>Secondes avant que la fenêtre affiche vos e-mails. Médiane de dix lancements. Plus court, c’est mieux.</p>
+  <div class="bar me"><span>Regards</span><b>0,89 s</b><i style="--w:15.8%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>1,48 s</b><i style="--w:26.4%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>1,90 s</b><i style="--w:33.9%"></i></div>
+  <div class="bar"><span>Spark</span><b>5,36 s</b><i style="--w:95.7%"></i></div>
+</div>
+
+<p>Elle reste rapide quand votre boîte est énorme : sur 100 000 messages, la recherche la plus lente que nous ayons essayée répond en 38 millisecondes. <a href="{{blog}}opens-in-0-89-seconds/">Tous les chiffres sont ici.</a></p>
+
+<h2>2. C’est la plus légère</h2>
+<p>Regards est construit en Rust et n’embarque aucun navigateur web : il s’installe en 37 Mo là où les autres en demandent entre 361 et 850. Il tourne dans 124 Mo de mémoire là où il leur en faut entre 314 et 449. Il vous laisse votre ordinateur. <a href="{{blog}}why-37-mb/">Voici comment c’est possible.</a></p>
+
+<div class="wide stats">
+  <div><strong>1,7×</strong><b>plus rapide à afficher vos e-mails</b>que la suivante</div>
+  <div><strong>2,5×</strong><b>moins de mémoire</b>que la suivante</div>
+  <div><strong>10×</strong><b>plus petite à installer</b>que la suivante</div>
+</div>
+
+<h2>3. Votre agent IA fait le travail</h2>
+<p>D’autres applications e-mail ajoutent un assistant qui résume. Regards laisse l’agent que vous utilisez déjà, comme Claude, Codex ou Cursor, gérer vraiment votre boîte : écarter les newsletters, classer les factures, reporter ce qui peut attendre, rédiger les réponses.</p>
+<p>Vous gardez la main. Vous choisissez ce que l’agent peut faire, de rien du tout à lire, organiser ou envoyer. Rien n’est jamais envoyé sans votre accord, vous voyez tout ce qu’il a fait, et vous pouvez tout annuler.</p>
+
+<h2>4. Vos e-mails restent à vous</h2>
+<p>Les e-mails circulent entre votre ordinateur et votre fournisseur, et nulle part ailleurs. Regards n’a ni serveurs, ni télémétrie, ni compte à créer. Nous ne pourrions pas lire vos e-mails même si nous le voulions.</p>
+
+<h2>5. C’est gratuit. Entièrement.</h2>
+<p>Toutes les fonctions, toutes vos adresses, sur tous les systèmes. Pas d’essai, pas de publicité, pas d’abonnement mensuel pour l’IA. Un service payant facultatif est prévu pour plus tard, et l’application elle-même reste gratuite.</p>
+
+<h2>6. C’est open source</h2>
+<p>Chaque ligne est publique, sous les licences Apache-2.0 et MIT. Vous pouvez lire ce qu’elle fait, la compiler vous-même, et la garder pour de bon. <a href="{{blog}}why-open-source/">Pourquoi cela compte pour une application e-mail.</a></p>
+
+<h2>7. Elle est faite pour qu’on y vive</h2>
+<p>Vous passez des heures par jour dans vos e-mails. Regards est reposant à regarder, en clair comme en sombre, et vif sous les doigts :</p>
+<ul>
+  <li><b>Triée pour vous,</b> par priorité, par catégorie ou par date, les personnes d’abord.</li>
+  <li><b>Les nouveaux expéditeurs demandent d’abord.</b> Le premier message d’un inconnu attend que vous l’acceptiez ou le bloquiez.</li>
+  <li><b>Report, rappels, envoi différé, annulation d’envoi.</b></li>
+  <li><b>Annuler partout.</b> Chaque action, la vôtre ou celle de votre agent, peut être défaite.</li>
+  <li><b>Chaque touche est à vous.</b> Faites tout au clavier et changez n’importe quel raccourci.</li>
+  <li><b>Tous vos comptes</b> dans une seule fenêtre, avec l’adresse que vous avez déjà.</li>
+  <li><b>La même application</b> sous Windows, macOS et Linux, en français et en anglais.</li>
+</ul>
+
+<h2>La partie honnête</h2>
+<p>Regards est jeune : c’est la version {{version}}. Les installateurs ne sont pas encore signés, et votre système affiche donc un avertissement la première fois. Notre test de vitesse ne couvre pour l’instant que Windows, et il y a une ligne que nous n’y gagnons pas encore. Nous la publions aussi.</p>
+<p>Nous pensons que cela fait partie d’être la meilleure : vous dire exactement où en sont les choses, et vous laisser vérifier. Téléchargez-la, donnez-lui cinq minutes, et jugez par vous-même.</p>
+
+<p class="fine">La vitesse et la taille ont été mesurées les 13 et 15 novembre 2026 sous Windows 11, chaque application avec un seul compte contenant les mêmes 20 000 messages : Regards 0.3.0 compilé depuis les sources, Mailspring 1.26.2, Thunderbird 161.0 bêta, Spark 3.32.4. Le chiffre de recherche est celui du moteur de messagerie de Regards seul, sur 100 000 messages. La méthode et les résultats bruts sont dans le <a href="https://github.com/lucienPochon/regards/tree/main/bench">dépôt</a>.</p>
