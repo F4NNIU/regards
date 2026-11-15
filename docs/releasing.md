@@ -39,6 +39,8 @@ Development builds don't need any of this: Cargo builds `regards` into the same 
 3. **Try the installers**, at least on one system, then publish the draft. Nothing is published before that.
 4. **Read the website** ([`website/`](../website/README.md)) against this release. The version and the download buttons follow by themselves; the words do not. Change both languages wherever the page no longer says what the release does: features, installers, signing, updates.
 
+Between releases, a pull request that changes what goes into the installers (the Tauri configuration, the installer hooks, the release scripts, the dependencies, the workflows) builds them in [CI](../.github/workflows/ci.yml), as a release does, and checks that the update files are there. Nothing from it is kept.
+
 To build one bundle locally: `cd apps/desktop && npm run release`, optionally with `-- --bundles nsis` (or `dmg`, `deb` …) for a single format.
 
 ## Checking where a download was built
@@ -57,7 +59,7 @@ It fails for a file that was changed, or built anywhere else. Releases up to 0.3
 
 - **Signing:**
   - Windows: through the SignPath Foundation, free for open source ([code signing policy](code-signing.md)). Applied for; the signing steps in the workflow come once the project is accepted.
-  - macOS: Developer ID and notarisation need the Apple Developer Program ($99 a year), so not for now.
+  - macOS: Developer ID and notarisation need the Apple Developer Program ($99 a year), so not for now. The app is signed *ad hoc* (`bundle.macOS.signingIdentity` is `-`): it names no one and Gatekeeper still warns, but without it macOS calls a downloaded app damaged.
 
   Until then, Windows SmartScreen and macOS Gatekeeper warn on first start.
 
