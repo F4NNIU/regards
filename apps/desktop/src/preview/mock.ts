@@ -1015,6 +1015,7 @@ function handle(cmd: string, args: Args): unknown {
     case "open_url":
     case "open_in_agent":
     case "add_to_cursor":
+    case "add_to_lm_studio":
       return null;
     case "account_set_auto_copy": {
       const owner = accounts.find((a) => a.account.id === args.accountId);

@@ -126,6 +126,20 @@ pub(crate) fn add_to_cursor() -> Result<(), String> {
     open::that_detached(cursor_link()).map_err(|error| format!("could not open Cursor: {error}"))
 }
 
+/// The link that offers Regards to LM Studio as an MCP server, for the
+/// person to confirm there (lmstudio.ai/docs/app/mcp/deeplink): its entry
+/// as in LM Studio's `mcp.json`, in base64.
+fn lm_studio_link() -> String {
+    let config = base64(br#"{"command":"regards","args":["mcp"]}"#).replace('=', "%3D");
+    format!("lmstudio://add_mcp?name=regards&config={config}")
+}
+
+/// Open LM Studio, asking it to add Regards as an MCP server.
+#[tauri::command]
+pub(crate) fn add_to_lm_studio() -> Result<(), String> {
+    open::that_detached(lm_studio_link()).map_err(|error| format!("could not open LM Studio: {error}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,6 +153,14 @@ mod tests {
         assert_eq!(
             cursor_link(),
             "cursor://anysphere.cursor-deeplink/mcp/install?name=regards&config=eyJjb21tYW5kIjoicmVnYXJkcyIsImFyZ3MiOlsibWNwIl19"
+        );
+    }
+
+    #[test]
+    fn lm_studio_is_offered_the_mcp_server_in_base64() {
+        assert_eq!(
+            lm_studio_link(),
+            "lmstudio://add_mcp?name=regards&config=eyJjb21tYW5kIjoicmVnYXJkcyIsImFyZ3MiOlsibWNwIl19"
         );
     }
 

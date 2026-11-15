@@ -18,6 +18,7 @@ enum Id {
     ClaudeApp,
     Codex,
     Cursor,
+    LmStudio,
 }
 
 /// An agent app found on this computer.
@@ -100,7 +101,31 @@ fn look(places: &Places) -> Vec<Found> {
         found.push(Found { id: Id::Cursor, set_up });
     }
 
+    let lm_studio: Vec<PathBuf> = lm_studio_dirs(home).into_iter().filter(|dir| dir.is_dir()).collect();
+    if !lm_studio.is_empty() {
+        let set_up = lm_studio.iter().any(|dir| has_mcp_json(&dir.join("mcp.json")));
+        found.push(Found {
+            id: Id::LmStudio,
+            set_up,
+        });
+    }
+
     found
+}
+
+/// Where LM Studio keeps its settings (and its `mcp.json`): the folder its
+/// pointer file names, when it was moved, then the two it has used.
+fn lm_studio_dirs(home: &Path) -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Ok(pointer) = fs::read_to_string(home.join(".lmstudio-home-pointer")) {
+        let pointer = pointer.trim();
+        if !pointer.is_empty() {
+            dirs.push(PathBuf::from(pointer));
+        }
+    }
+    dirs.push(home.join(".lmstudio"));
+    dirs.push(home.join(".cache").join("lm-studio"));
+    dirs
 }
 
 /// The Claude app's settings folders: `Claude` in the app data folder
@@ -186,6 +211,11 @@ mod tests {
         );
         // Cursor, with a broken mcp.json.
         write(home.join(".cursor/mcp.json"), "{ not json");
+        // LM Studio, with the MCP server, in the folder it used before.
+        write(
+            home.join(".cache/lm-studio/mcp.json"),
+            r#"{"mcpServers":{"regards":{"command":"regards","args":["mcp"]}}}"#,
+        );
 
         let found = look(&Places {
             home: home.clone(),
@@ -210,7 +240,38 @@ mod tests {
                     id: Id::Cursor,
                     set_up: false
                 },
+                Found {
+                    id: Id::LmStudio,
+                    set_up: true
+                },
             ]
+        );
+    }
+
+    #[test]
+    fn lm_studio_where_its_pointer_says() {
+        let home = scratch("lm-studio");
+        let moved = home.join("elsewhere");
+        fs::create_dir_all(&moved).unwrap();
+        write(home.join(".lmstudio-home-pointer"), &format!("{}\n", moved.display()));
+        let places = || Places {
+            home: home.clone(),
+            claude_app: vec![],
+        };
+        assert_eq!(
+            look(&places()),
+            vec![Found {
+                id: Id::LmStudio,
+                set_up: false
+            }]
+        );
+        write(moved.join("mcp.json"), r#"{"mcpServers":{"regards":{}}}"#);
+        assert_eq!(
+            look(&places()),
+            vec![Found {
+                id: Id::LmStudio,
+                set_up: true
+            }]
         );
     }
 

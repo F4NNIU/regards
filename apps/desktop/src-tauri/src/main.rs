@@ -2181,6 +2181,7 @@ fn main() {
             system::open_url,
             system::open_in_agent,
             system::add_to_cursor,
+            system::add_to_lm_studio,
             agent_apps::agent_apps_found,
             command_line::command_line,
             account_update,
