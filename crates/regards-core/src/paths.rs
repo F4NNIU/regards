@@ -93,6 +93,12 @@ impl DataDirs {
         self.data.join("logs").join("daemon.log")
     }
 
+    /// The desktop app's own log: what it could not do, and where it stopped
+    /// if it ever does. Never message content, secrets or addresses.
+    pub fn app_log(&self) -> PathBuf {
+        self.data.join("logs").join("app.log")
+    }
+
     /// The connection log, when the person turns it on (Settings › Support):
     /// commands and replies, never mail, passwords, tokens or addresses.
     pub fn connection_log(&self) -> PathBuf {
