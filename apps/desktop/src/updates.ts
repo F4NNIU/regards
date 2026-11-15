@@ -22,6 +22,19 @@ export interface UpdateStatus {
   available: Update | null;
   /** Unix ms of the last check, this run. */
   checked_at: number | null;
+  /**
+   * Whether this copy can install an update by itself (`installUpdate`). A
+   * development build can't: offer the download (`openUpdate`) instead.
+   */
+  can_install: boolean;
+}
+
+/** How far the download of an update is (`onUpdateProgress`). */
+export interface UpdateProgress {
+  /** Bytes so far. */
+  received: number;
+  /** Bytes in all; `null` when the server does not say. */
+  total: number | null;
 }
 
 export const updateStatus = () => invoke<UpdateStatus>("update_status");
@@ -34,6 +47,18 @@ export const checkForUpdate = () => invoke<Update | null>("update_check");
 
 /** Open the found release's page in the browser, for the download. */
 export const openUpdate = () => invoke<void>("update_open");
+
+/**
+ * Download the latest version, install it and start Regards again, as the
+ * person asked. It does not resolve when it works: the app ends, and the new
+ * one starts. Rejects with the reason if it could not; the download
+ * (`openUpdate`) is then still there.
+ */
+export const installUpdate = () => invoke<void>("update_install");
+
+/** While `installUpdate` downloads. */
+export const onUpdateProgress = (handler: (progress: UpdateProgress) => void): Promise<UnlistenFn> =>
+  listen<UpdateProgress>("update_progress", (event) => handler(event.payload));
 
 /** A daily check found a version the person was not told of yet (also notified once). */
 export const onUpdateAvailable = (handler: (update: Update) => void): Promise<UnlistenFn> =>

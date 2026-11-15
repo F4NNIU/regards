@@ -1189,7 +1189,7 @@ function handle(cmd: string, args: Args): unknown {
       notificationChoices = args.settings as typeof notificationChoices;
       return null;
     case "update_status":
-      return { checks: updateChecks, current: "0.1.0", available: updateFound, checked_at: updateCheckedAt };
+      return { checks: updateChecks, current: "0.1.0", available: updateFound, checked_at: updateCheckedAt, can_install: params.get("install") !== "no" };
     case "update_set_checks":
       updateChecks = Boolean(args.on);
       return null;
@@ -1203,6 +1203,9 @@ function handle(cmd: string, args: Args): unknown {
       return updateFound;
     case "update_open":
       return null;
+    case "update_install":
+      // The real one ends the app. Here it fails, so the download is offered (`?install=no`: never offered).
+      throw "could not install the update: this is the preview";
     case "account_oauth_providers":
       return { providers: ["microsoft", "google"] };
     case "account_oauth_start":
