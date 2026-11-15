@@ -1,9 +1,9 @@
-<p>Installez quatre applications e-mail et regardez ce qu’elles déposent sur votre disque. Trois d’entre elles prennent entre 361 et 850 Mo. Regards en prend 37. La différence ne tient pas à une compression astucieuse. Elle tient à ce qu’il y a dedans.</p>
+<p>Installez quatre applications e-mail et regardez ce qu’elles déposent sur votre disque. Trois d’entre elles prennent entre 361 et 850 Mo. Regards en prend 39. La différence ne tient pas à une compression astucieuse. Elle tient à ce qu’il y a dedans.</p>
 
 <div class="wide bars">
   <h3>Taille installée</h3>
   <p>Ce que chaque application dépose sur le disque à l’installation, avant le moindre e-mail. Moins, c’est mieux.</p>
-  <div class="bar me"><span>Regards</span><b>37 Mo</b><i style="--w:4.4%"></i></div>
+  <div class="bar me"><span>Regards</span><b>39 Mo</b><i style="--w:4.6%"></i></div>
   <div class="bar"><span>Thunderbird</span><b>361 Mo</b><i style="--w:42.5%"></i></div>
   <div class="bar"><span>Spark</span><b>691 Mo</b><i style="--w:81.3%"></i></div>
   <div class="bar"><span>Mailspring</span><b>850 Mo</b><i style="--w:100%"></i></div>
@@ -15,18 +15,18 @@
 
 <h2>Regards n’en livre pas</h2>
 <p>Votre ordinateur a déjà un moteur web. Windows en fournit un, macOS aussi, et sous Linux c’est une bibliothèque que le système partage entre les applications. Regards dessine sa fenêtre avec ce moteur et n’en livre aucun.</p>
-<p>Il reste deux programmes écrits en Rust : la fenêtre, environ 18 Mo, et le moteur de messagerie, environ 20 Mo. Rust produit du code natif compact, sans rien à emporter avec lui. C’est tout l’installateur.</p>
+<p>Il reste deux programmes écrits en Rust : la fenêtre, environ 19 Mo, et le moteur de messagerie, environ 20 Mo. Rust produit du code natif compact, sans rien à emporter avec lui. C’est tout l’installateur.</p>
 
 <h2>Il n’y a pas que le disque</h2>
-<p>Une application plus légère l’est partout. Une minute après le lancement, Regards occupe 124 Mo de mémoire. Les trois autres en occupent entre 314 et 449.</p>
+<p>Une application plus légère l’est partout. Une minute après le lancement, Regards occupe 120 Mo de mémoire. Les trois autres en occupent entre 299 et 470.</p>
 
 <div class="wide bars">
   <h3>Mémoire</h3>
   <p>Occupée par toute l’application une minute après le lancement, avec 20 000 messages. Moins, c’est mieux.</p>
-  <div class="bar me"><span>Regards</span><b>124 Mo</b><i style="--w:27.6%"></i></div>
-  <div class="bar"><span>Thunderbird</span><b>314 Mo</b><i style="--w:69.9%"></i></div>
-  <div class="bar"><span>Mailspring</span><b>369 Mo</b><i style="--w:82.2%"></i></div>
-  <div class="bar"><span>Spark</span><b>449 Mo</b><i style="--w:100%"></i></div>
+  <div class="bar me"><span>Regards</span><b>120 Mo</b><i style="--w:25.5%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>299 Mo</b><i style="--w:63.6%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>369 Mo</b><i style="--w:78.5%"></i></div>
+  <div class="bar"><span>Spark</span><b>470 Mo</b><i style="--w:100%"></i></div>
 </div>
 
 <p>Ce chiffre de mémoire est le chiffre honnête : il compte tous les processus que Regards démarre, y compris le moteur web du système avec lequel il dessine. Le moteur est partagé, mais nous le comptons comme le nôtre.</p>
@@ -35,8 +35,8 @@
 <ul>
   <li><b>Un téléchargement de quelques secondes,</b> et des mises à jour aussi rapides.</li>
   <li><b>De la place pour tout le reste.</b> Une application e-mail reste ouverte toute la journée. Elle ne devrait pas être ce qu’il y a de plus lourd sur votre ordinateur.</li>
-  <li><b>Un démarrage plus rapide.</b> Moins à charger, c’est moins à attendre : <a href="{{blog}}opens-in-0-89-seconds/">Regards affiche vos e-mails en 0,89 seconde.</a></li>
+  <li><b>Un démarrage plus rapide.</b> Moins à charger, c’est moins à attendre : <a href="{{blog}}opens-in-0-89-seconds/">Regards affiche vos e-mails en 0,73 seconde.</a></li>
   <li><b>Les mises à jour de sécurité de votre système.</b> Le moteur web est tenu à jour par Windows, macOS ou votre distribution Linux, à leur rythme et non au nôtre.</li>
 </ul>
 
-<p class="fine">Mesuré les 13 et 15 novembre 2026 sous Windows 11, chaque application avec un seul compte contenant les mêmes 20 000 messages. Regards 0.3.0 ; Mailspring 1.26.2 ; Thunderbird 161.0 bêta ; Spark 3.32.4. La taille installée est celle du dossier de l’application. Le moteur web du système qu’utilise Regards est sur l’ordinateur, que Regards soit installé ou non : il n’est donc pas dans les 37 Mo, mais il est compté dans la mémoire. Les tailles sous macOS et Linux n’ont pas encore été mesurées.</p>
+<p class="fine">Mesuré le 15 novembre 2026 sous Windows 11 (AMD Ryzen 7 5800X, 32 Go de mémoire), chaque application avec un seul compte contenant les mêmes 20 000 messages : Regards 0.4.0 tel que publié, Mailspring 1.26.2, Thunderbird 161.0 bêta, Spark 3.32.4. Personne n’utilisait l’ordinateur pendant l’essai, mais deux autres applications e-mail étaient ouvertes dans la session d’un autre utilisateur. Thunderbird a été mesuré dans sa version bêta, parce que c’est là que se trouve le compte de test. La taille installée est celle du dossier de l’application : pour Regards, 19,1 Mo pour la fenêtre, 19,9 Mo pour le moteur de messagerie et 0,1 Mo pour le désinstallateur. Le moteur web du système qu’utilise Regards est sur l’ordinateur, que Regards soit installé ou non : il n’est donc pas dans les 39 Mo, mais il est compté dans la mémoire. Les tailles sous macOS et Linux n’ont pas encore été mesurées.</p>

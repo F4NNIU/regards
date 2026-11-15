@@ -1,9 +1,9 @@
-<p>Install four desktop mail apps and look at what they put on your disk. Three of them take between 361 and 850 MB. Regards takes 37. The difference is not clever compression. It is what is inside.</p>
+<p>Install four desktop mail apps and look at what they put on your disk. Three of them take between 361 and 850 MB. Regards takes 39. The difference is not clever compression. It is what is inside.</p>
 
 <div class="wide bars">
   <h3>Installed size</h3>
   <p>What each app puts on disk when you install it, before any mail. Less is better.</p>
-  <div class="bar me"><span>Regards</span><b>37 MB</b><i style="--w:4.4%"></i></div>
+  <div class="bar me"><span>Regards</span><b>39 MB</b><i style="--w:4.6%"></i></div>
   <div class="bar"><span>Thunderbird</span><b>361 MB</b><i style="--w:42.5%"></i></div>
   <div class="bar"><span>Spark</span><b>691 MB</b><i style="--w:81.3%"></i></div>
   <div class="bar"><span>Mailspring</span><b>850 MB</b><i style="--w:100%"></i></div>
@@ -15,18 +15,18 @@
 
 <h2>Regards does not ship one</h2>
 <p>Your computer already has a web engine. Windows comes with one, so does macOS, and on Linux it is a library the system shares between apps. Regards draws its window with that engine and ships none of its own.</p>
-<p>What is left is two programs written in Rust: the window, about 18 MB, and the mail engine, about 20 MB. Rust compiles to compact native code and needs no runtime alongside it. That is the whole installer.</p>
+<p>What is left is two programs written in Rust: the window, about 19 MB, and the mail engine, about 20 MB. Rust compiles to compact native code and needs no runtime alongside it. That is the whole installer.</p>
 
 <h2>It is not only the disk</h2>
-<p>A lighter app is lighter everywhere. One minute after launch, Regards holds 124 MB of memory. The other three hold between 314 and 449 MB.</p>
+<p>A lighter app is lighter everywhere. One minute after launch, Regards holds 120 MB of memory. The other three hold between 299 and 470 MB.</p>
 
 <div class="wide bars">
   <h3>Memory</h3>
   <p>Held by the whole app one minute after launch, with 20,000 messages. Less is better.</p>
-  <div class="bar me"><span>Regards</span><b>124 MB</b><i style="--w:27.6%"></i></div>
-  <div class="bar"><span>Thunderbird</span><b>314 MB</b><i style="--w:69.9%"></i></div>
-  <div class="bar"><span>Mailspring</span><b>369 MB</b><i style="--w:82.2%"></i></div>
-  <div class="bar"><span>Spark</span><b>449 MB</b><i style="--w:100%"></i></div>
+  <div class="bar me"><span>Regards</span><b>120 MB</b><i style="--w:25.5%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>299 MB</b><i style="--w:63.6%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>369 MB</b><i style="--w:78.5%"></i></div>
+  <div class="bar"><span>Spark</span><b>470 MB</b><i style="--w:100%"></i></div>
 </div>
 
 <p>That memory figure is the honest one: it counts every process Regards starts, including the system web engine it draws with. The engine is shared, but we count it as ours.</p>
@@ -35,8 +35,8 @@
 <ul>
   <li><b>A download that takes seconds,</b> and updates that do too.</li>
   <li><b>Room for everything else.</b> A mail app stays open all day. It should not be the heaviest thing on your computer.</li>
-  <li><b>A faster start.</b> Less to load is less to wait for: <a href="{{blog}}opens-in-0-89-seconds/">Regards shows your mail in 0.89 seconds.</a></li>
+  <li><b>A faster start.</b> Less to load is less to wait for: <a href="{{blog}}opens-in-0-89-seconds/">Regards shows your mail in 0.73 seconds.</a></li>
   <li><b>Security updates from your system.</b> The web engine is kept up to date by Windows, macOS or your Linux distribution, on their schedule, not ours.</li>
 </ul>
 
-<p class="fine">Measured on 13 and 15 November 2026 on Windows 11, each app with one account holding the same 20,000 messages. Regards 0.3.0; Mailspring 1.26.2; Thunderbird 161.0 beta; Spark 3.32.4. Installed size is the app’s own folder. The system web engine Regards uses is on the computer whether Regards is installed or not, so it is not in the 37 MB; it is counted in the memory. Sizes on macOS and Linux have not been measured yet.</p>
+<p class="fine">Measured on 15 November 2026 on Windows 11 (AMD Ryzen 7 5800X, 32 GB of memory), each app with one account holding the same 20,000 messages: Regards 0.4.0 as published, Mailspring 1.26.2, Thunderbird 161.0 beta, Spark 3.32.4. Nobody was using the computer during the run, but two other mail apps were open in another user’s session. Thunderbird was measured in its beta version because that is where the test account is. Installed size is the app’s own folder: for Regards, 19.1 MB for the window, 19.9 MB for the mail engine and 0.1 MB for the uninstaller. The system web engine Regards uses is on the computer whether Regards is installed or not, so it is not in the 39 MB; it is counted in the memory. Sizes on macOS and Linux have not been measured yet.</p>

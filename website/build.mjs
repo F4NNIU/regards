@@ -11,6 +11,7 @@
 //   not forgotten in the other.
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { speedPage } from "./speed.mjs";
 
 const here = import.meta.dirname;
 const out = join(here, "dist");
@@ -129,7 +130,7 @@ const day = (date, lang) =>
 function blogPage(lang, path, depth, title, description, content) {
   const prefix = lang === "fr" ? "fr/" : "";
   const root = "../".repeat(depth + (lang === "fr" ? 1 : 0));
-  const shared = { version, releases, ...downloads, root, site, shots: lang === "fr" ? "-fr" : "", home: `${root}${prefix}` || "./", blog: `${root}${prefix}blog/`, ...Object.fromEntries(Object.entries(words[lang]).map(([key, text]) => [key, fill(text, { version })])) };
+  const shared = { version, releases, ...downloads, root, site, shots: lang === "fr" ? "-fr" : "", home: `${root}${prefix}` || "./", blog: `${root}${prefix}blog/`, speed: `${root}${prefix}speed/`, ...Object.fromEntries(Object.entries(words[lang]).map(([key, text]) => [key, fill(text, { version })])) };
   const other = lang === "fr" ? "en" : "fr";
   const html = fill(layout, {
     ...shared,
@@ -149,6 +150,8 @@ function blogPage(lang, path, depth, title, description, content) {
       fr_href: `${root}fr/${path}`,
       en_current: lang === "en" ? ' aria-current="true"' : "",
       fr_current: lang === "fr" ? ' aria-current="true"' : "",
+      blog_current: path.startsWith("blog/") ? ' aria-current="page"' : "",
+      speed_current: path.startsWith("speed/") ? ' aria-current="page"' : "",
       content: fill(content, shared),
     }),
   });
@@ -188,6 +191,14 @@ for (const lang of ["en", "fr"]) {
     `<div class="posts"><div class="wrap">\n${cards}\n</div></div>`;
   blogPage(lang, "blog/", 1, w.index_title, w.index_description, index);
   console.log(`${lang}: ${posts.length} articles`);
+}
+// The speed page: the same numbers in both languages (speed.mjs).
+const speedData = JSON.parse(read("src", "speed", "data.json"));
+const speedWords = JSON.parse(read("src", "speed", "words.json"));
+for (const lang of ["en", "fr"]) {
+  const page = speedPage(lang, speedWords[lang], speedData);
+  blogPage(lang, "speed/", 1, page.title, page.description, page.content);
+  console.log(`${lang}: speed page`);
 }
 cpSync(join(here, "assets"), join(out, "assets"), { recursive: true });
 // GitHub Pages: serve the files as they are.

@@ -1,20 +1,20 @@
 <div class="wide bars">
   <h3>From the click to your mail</h3>
   <p>Seconds until the window shows your mail. Median of ten launches. Shorter is better.</p>
-  <div class="bar me"><span>Regards</span><b>0.89 s</b><i style="--w:15.8%"></i></div>
-  <div class="bar"><span>Mailspring</span><b>1.48 s</b><i style="--w:26.4%"></i></div>
-  <div class="bar"><span>Thunderbird</span><b>1.90 s</b><i style="--w:33.9%"></i></div>
-  <div class="bar"><span>Spark</span><b>5.36 s</b><i style="--w:95.7%"></i></div>
+  <div class="bar me"><span>Regards</span><b>0.73 s</b><i style="--w:13.0%"></i></div>
+  <div class="bar"><span>Thunderbird</span><b>1.21 s</b><i style="--w:21.6%"></i></div>
+  <div class="bar"><span>Mailspring</span><b>1.49 s</b><i style="--w:26.6%"></i></div>
+  <div class="bar"><span>Spark</span><b>5.50 s</b><i style="--w:98.2%"></i></div>
 </div>
 
 <h2>First to your mail, and lighter everywhere</h2>
-<p>Regards shows your inbox 0.89 seconds after the click. The next app, Mailspring, needs 1.48 seconds. Thunderbird takes 1.90 and Spark 5.36. Regards has been open for more than four seconds by the time the slowest of them shows a window.</p>
+<p>Regards shows your inbox 0.73 seconds after the click. The next app, Thunderbird, needs 1.21 seconds. Mailspring takes 1.49 and Spark 5.50. Regards has been open for more than four seconds by the time the slowest of them shows a window.</p>
 <p>Launch is only one line of the table. Regards is also the lightest of the four on every measure of weight:</p>
 
 <div class="wide stats">
-  <div><strong>2.5×</strong><b>less memory</b>124 MB, against 314 MB for the next best</div>
-  <div><strong>10×</strong><b>smaller install</b>37 MB, against 361 MB for the next best</div>
-  <div><strong>1.7×</strong><b>faster to your mail</b>0.89 s, against 1.48 s for the next best</div>
+  <div><strong>2.5×</strong><b>less memory</b>120 MB, against 299 MB for the next best</div>
+  <div><strong>9×</strong><b>smaller install</b>39 MB, against 361 MB for the next best</div>
+  <div><strong>1.7×</strong><b>faster to your mail</b>0.73 s, against 1.21 s for the next best</div>
 </div>
 
 <h2>Why it is this fast</h2>
@@ -32,19 +32,19 @@
   <div><small>Bug 2 · the engine</small><h3>One question, 20,000 answers</h3>Every ten seconds the engine asked its database about your drafts, and the database answered by walking through every stored message.<code>16 ms → <b>0.006 ms</b> per check</code></div>
 </div>
 
-<p>With both fixed, the engine alone uses 0.00% of a core at rest and reads nothing from disk. <a href="{{blog}}the-spinner-nobody-could-see/">The full story of both bugs is here.</a> The fixes ship in the next release, each with a test that fails if the problem ever comes back.</p>
+<p>With both fixed, the engine alone uses 0.00% of a core at rest and reads nothing from disk. <a href="{{blog}}the-spinner-nobody-could-see/">The full story of both bugs is here.</a> Both fixes shipped in Regards 0.4.0, each with a test that fails if the problem ever comes back.</p>
 
-<h2>The one we do not win yet</h2>
-<p>Processor use at rest. With the window open, Regards is at 0.31% of a core and Mailspring at 0.05%. Both are tiny, and Regards already beats Thunderbird and Spark here, but second is second. The engine fix is not in that figure yet. We will measure again with the next release and publish whatever comes out.</p>
+<h2>The one we did not win at first</h2>
+<p>Processor use at rest. On the first run, with only the spinner fixed, Regards was at 0.31% of a core and Mailspring at 0.05%. Second is second, so we published it. Regards 0.4.0 has both fixes, and all four apps were measured again: Regards is at 0.05% and Mailspring at 0.10%. Regards now comes first in all eight columns.</p>
 
 <h2>Every number</h2>
 <div class="wide tbl"><table>
   <thead><tr><th>App</th><th>Window</th><th>Mail on screen</th><th>Quiet</th><th>CPU to start</th><th>Memory</th><th>CPU at rest</th><th>Mail on disk</th><th>Installed</th></tr></thead>
   <tbody>
-    <tr><th>Regards</th><td class="best">0.55 s</td><td class="best">0.89 s</td><td class="best">1.62 s</td><td class="best">2.1 s</td><td class="best">124 MB</td><td>0.31 %</td><td class="best">57 MB</td><td class="best">37 MB</td></tr>
-    <tr><th>Mailspring</th><td>1.39 s</td><td>1.48 s</td><td>2.19 s</td><td>2.6 s</td><td>369 MB</td><td class="best">0.05 %</td><td>128 MB</td><td>850 MB</td></tr>
-    <tr><th>Thunderbird</th><td>0.88 s</td><td>1.90 s</td><td>2.58 s</td><td>3.8 s</td><td>314 MB</td><td>1.77 %</td><td>337 MB</td><td>361 MB</td></tr>
-    <tr><th>Spark</th><td>5.05 s</td><td>5.36 s</td><td>6.11 s</td><td>7.7 s</td><td>449 MB</td><td>1.95 %</td><td>130 MB</td><td>691 MB</td></tr>
+    <tr><th>Regards</th><td class="best">0.49 s</td><td class="best">0.73 s</td><td class="best">1.07 s</td><td class="best">1.9 s</td><td class="best">120 MB</td><td class="best">0.05 %</td><td class="best">57 MB</td><td class="best">39 MB</td></tr>
+    <tr><th>Mailspring</th><td>1.39 s</td><td>1.49 s</td><td>1.73 s</td><td>2.6 s</td><td>369 MB</td><td>0.10 %</td><td>128 MB</td><td>850 MB</td></tr>
+    <tr><th>Thunderbird</th><td>0.76 s</td><td>1.21 s</td><td>2.38 s</td><td>3.0 s</td><td>299 MB</td><td>2.53 %</td><td>335 MB</td><td>361 MB</td></tr>
+    <tr><th>Spark</th><td>5.18 s</td><td>5.50 s</td><td>6.30 s</td><td>8.4 s</td><td>470 MB</td><td>2.11 %</td><td>134 MB</td><td>691 MB</td></tr>
   </tbody>
 </table></div>
 
@@ -52,4 +52,4 @@
 <p>Every app was measured from the outside, the same way, on the same computer, with the same mail. The script, the rules and the raw results are in the <a href="https://github.com/lucienPochon/regards/tree/main/bench">repository</a>, and <a href="{{blog}}how-to-benchmark-a-mail-app/">we wrote down how we did it, mistakes included.</a> Run it on your own machine and see what you get.</p>
 <p>Next we are timing search and opening a message in all four apps, then doing it all again on macOS and Linux.</p>
 
-<p class="fine">Measured on 13 and 15 November 2026 on Windows 11 (AMD Ryzen 7 5800X, 32 GB of memory), each app with one account holding the same 20,000 messages. Regards 0.3.0 built from source with the spinner fix described above; Mailspring 1.26.2; Thunderbird 161.0 beta; Spark 3.32.4. This first run was made on a computer in use, not a quiet one, and will be redone at the next release. Memory and processor time count every process an app runs, including the system web view Regards draws with. Unless you ask it to download recent mail ahead, Regards stores each message’s sender, subject and first lines and fetches the rest when you open it, which is a large part of why it uses less disk.</p>
+<p class="fine">Measured on 15 November 2026 on Windows 11 (AMD Ryzen 7 5800X, 32 GB of memory), each app with one account holding the same 20,000 messages: Regards 0.4.0 as published, Mailspring 1.26.2, Thunderbird 161.0 beta, Spark 3.32.4. Nobody was using the computer during the run, but two other mail apps were open in another user’s session. Thunderbird was measured in its beta version because that is where the test account is. Memory and processor time count every process an app runs, including the system web view Regards draws with. Unless you ask it to download recent mail ahead, Regards stores each message’s sender, subject and first lines and fetches the rest when you open it, which is a large part of why it uses less disk.</p>

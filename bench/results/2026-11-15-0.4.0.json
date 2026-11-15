@@ -1,0 +1,221 @@
+{
+  "Machine": {
+    "Date": "2026-11-15 22:30",
+    "Cpu": "AMD Ryzen 7 5800X 8-Core Processor",
+    "RamGB": 32,
+    "Windows": "10.0.26320",
+    "Runs": 10,
+    "Passive": false,
+    "Notes": "Second run, on the published Regards 0.4.0 (installed from Regards_0.4.0_x64-setup.exe of the v0.4.0 release). Regards was measured in a run of its own, a few minutes after the three others (same machine, same day, same script). Nobody was using the computer. Short of the rules in two ways: during the run of Spark, Mailspring and Thunderbird, another user session had Regards, Mailspring and Spark open (during the run of Regards, Mailspring and Spark only); and Thunderbird is the Beta install (161.0), the one that holds the test account. Regards install size now counts the installer-made uninstall.exe (0.1 MB)."
+  },
+  "Results": [
+    {
+      "App": "Regards",
+      "Version": "0.4.0",
+      "InstallMB": 39.1,
+      "DataMB": 56.6,
+      "WindowMs": [
+        545,
+        497,
+        479,
+        510,
+        468,
+        443,
+        494,
+        496,
+        459,
+        480
+      ],
+      "DrawnMs": [
+        745,
+        686,
+        697,
+        744,
+        762,
+        746,
+        714,
+        701,
+        762,
+        684
+      ],
+      "QuietMs": [
+        1115,
+        1070,
+        1320,
+        1058,
+        1055
+      ],
+      "StartCpuS": [
+        1.97,
+        2.12,
+        1.92,
+        1.78,
+        1.86
+      ],
+      "Processes": 9,
+      "PrivateWorkingSetMB": 120,
+      "CommitMB": 202,
+      "IdleCpuPercent": 0.05,
+      "WindowMsMedian": 487,
+      "DrawnMsMedian": 729,
+      "QuietMsMedian": 1070,
+      "StartCpuSMedian": 1.92
+    },
+    {
+      "App": "Spark",
+      "Version": "3.32.4.65535",
+      "InstallMB": 690.5,
+      "DataMB": 133.8,
+      "WindowMs": [
+        5351,
+        5174,
+        5187,
+        5216,
+        5067,
+        5564,
+        5173,
+        5048,
+        5259,
+        5101
+      ],
+      "DrawnMs": [
+        5707,
+        5597,
+        5488,
+        5516,
+        5474,
+        5887,
+        5455,
+        5349,
+        5575,
+        5414
+      ],
+      "QuietMs": [
+        6227,
+        6054,
+        6304,
+        6936,
+        6584
+      ],
+      "StartCpuS": [
+        8.36,
+        7.86,
+        8.44,
+        8.44,
+        8.3
+      ],
+      "Processes": 7,
+      "PrivateWorkingSetMB": 470,
+      "CommitMB": 701,
+      "IdleCpuPercent": 2.11,
+      "WindowMsMedian": 5180.5,
+      "DrawnMsMedian": 5502,
+      "QuietMsMedian": 6304,
+      "StartCpuSMedian": 8.36
+    },
+    {
+      "App": "Mailspring",
+      "Version": "1.26.2",
+      "InstallMB": 849.8,
+      "DataMB": 127.9,
+      "WindowMs": [
+        1486,
+        1411,
+        1414,
+        1369,
+        1344,
+        1426,
+        1642,
+        1318,
+        1369,
+        1378
+      ],
+      "DrawnMs": [
+        1583,
+        1506,
+        1493,
+        1447,
+        1431,
+        1522,
+        1736,
+        1400,
+        1449,
+        1477
+      ],
+      "QuietMs": [
+        1725,
+        2312,
+        1709,
+        1791,
+        1666
+      ],
+      "StartCpuS": [
+        2.41,
+        2.47,
+        2.88,
+        2.84,
+        2.61
+      ],
+      "Processes": 8,
+      "PrivateWorkingSetMB": 369,
+      "CommitMB": 568,
+      "IdleCpuPercent": 0.1,
+      "WindowMsMedian": 1394.5,
+      "DrawnMsMedian": 1485,
+      "QuietMsMedian": 1725,
+      "StartCpuSMedian": 2.61
+    },
+    {
+      "App": "ThunderbirdBeta",
+      "Version": "161.0",
+      "InstallMB": 360.8,
+      "DataMB": 334.7,
+      "WindowMs": [
+        830,
+        752,
+        757,
+        763,
+        797,
+        736,
+        764,
+        736,
+        784,
+        733
+      ],
+      "DrawnMs": [
+        1321,
+        1246,
+        1216,
+        1212,
+        1233,
+        1154,
+        1197,
+        1199,
+        1257,
+        1182
+      ],
+      "QuietMs": [
+        2380,
+        1881,
+        2671,
+        2660,
+        1924
+      ],
+      "StartCpuS": [
+        3.3,
+        3.02,
+        2.94,
+        2.98,
+        2.69
+      ],
+      "Processes": 7,
+      "PrivateWorkingSetMB": 299,
+      "CommitMB": 501,
+      "IdleCpuPercent": 2.53,
+      "WindowMsMedian": 760,
+      "DrawnMsMedian": 1214,
+      "QuietMsMedian": 2380,
+      "StartCpuSMedian": 2.98
+    }
+  ]
+}

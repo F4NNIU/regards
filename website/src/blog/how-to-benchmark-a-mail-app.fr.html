@@ -22,7 +22,7 @@
 <p>Aucune de ces erreurs n’a finalement avantagé Regards, et l’une d’elles cachait un résultat qui ne nous flattait pas. C’est tout l’intérêt des règles : on ne trouve ses propres erreurs que si on les cherche.</p>
 
 <h2>Deux règles que nous n’avons pas encore entièrement tenues</h2>
-<p>Ce premier essai a été fait pendant que l’ordinateur était utilisé, pas au calme, et Thunderbird a été mesuré dans sa version bêta, parce que c’est là que se trouvait le compte. Ni l’un ni l’autre ne change qui arrive premier, mais les deux vont contre nos propres règles : les deux sont donc écrits dans les fichiers de résultats. L’essai sera refait dans les règles à la prochaine version de Regards.</p>
+<p>Le premier essai a été fait sur un ordinateur en cours d’utilisation, et sur un Regards compilé depuis les sources. Nous l’avons refait sur Regards 0.4.0 tel que publié, sans personne devant l’ordinateur. Deux points restent en deçà des règles : d’autres applications e-mail étaient ouvertes dans la session d’un autre utilisateur, et Thunderbird est la version bêta, parce que c’est là que se trouve le compte de test. Les deux sont écrits dans les fichiers de résultats. Le test est refait à chaque version.</p>
 
 <h2>Ce que le test ne dit pas</h2>
 <ul>
@@ -40,4 +40,4 @@
 <i># mesurer les applications e-mail que vous avez (Windows)</i>
 <b>&gt;</b> powershell -ExecutionPolicy Bypass -File bench\compare-apps.ps1</pre>
 <p>Le script ferme et rouvre vos applications e-mail : ne le lancez pas pendant l’envoi d’un message. La méthode est décrite dans le <a href="https://github.com/lucienPochon/regards/tree/main/bench">dossier bench</a>, avec les résultats bruts de chaque essai. Si vous obtenez d’autres chiffres, nous voulons les voir.</p>
-<p>Les résultats eux-mêmes sont dans <a href="{{blog}}opens-in-0-89-seconds/">Regards s’ouvre en 0,89 seconde.</a></p>
+<p>Les résultats eux-mêmes sont dans <a href="{{blog}}opens-in-0-89-seconds/">Regards s’ouvre en 0,73 seconde.</a></p>
