@@ -72,7 +72,7 @@ regards daemon stop
 regards version
 ```
 
-A daemon started in the background logs to `logs/daemon.log` in the data directory.
+A daemon started in the background logs to `logs/daemon.log` in the data directory. The desktop app logs what it could not do, and where it stopped if it ever does, to `logs/app.log` beside it. Neither holds mail, passwords, tokens or addresses, and Settings › Support › export puts both in a file you choose.
 
 ### Add a mail account
 
