@@ -40,6 +40,10 @@ Every connection to a mail server, a sign-in service or a hosted AI provider use
 
 Regards relies on your operating system's disk encryption to protect these files. To remove everything, choose **Support › Remove everything from this computer**. Regards removes your passwords, sign-ins and keys from the credential store, then your mail, drafts, Outbox, settings and logs, and stops starting at login. Then it quits, and its next start is a first run. Mail on your servers is not touched.
 
+**Uninstalling:**
+- **Windows:** the uninstaller keeps all of this unless you tick *Delete the application data*; then it removes the same things.
+- **macOS and Linux:** removing the app keeps it. Choose *Remove everything from this computer* first.
+
 ## What your sent mail reveals
 
 Regards adds nothing that identifies your computer:

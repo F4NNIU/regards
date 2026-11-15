@@ -105,6 +105,41 @@ impl DataDirs {
         self.data.join("logs").join("connections.log")
     }
 
+    /// Whether `path` is a program the Windows installer put here: it
+    /// installs into this same folder (`%LOCALAPPDATA%\Regards`). Nothing
+    /// Regards keeps is an `.exe` at the top of its data, so removing the
+    /// data leaves these alone.
+    pub fn is_program(&self, path: &Path) -> bool {
+        path.parent() == Some(self.data.as_path())
+            && path
+                .extension()
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("exe"))
+    }
+
+    /// Remove what Regards keeps here, all but `keep` and the programs
+    /// ([`DataDirs::is_program`]). The number of entries that would not go.
+    pub fn remove_kept(&self, keep: &[PathBuf]) -> usize {
+        let Ok(entries) = std::fs::read_dir(&self.data) else {
+            return 0;
+        };
+        let mut left = 0;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if keep.contains(&path) || self.is_program(&path) {
+                continue;
+            }
+            let removed = if path.is_dir() {
+                std::fs::remove_dir_all(&path)
+            } else {
+                std::fs::remove_file(&path)
+            };
+            if removed.is_err() {
+                left += 1;
+            }
+        }
+        left
+    }
+
     /// Short identifier derived from the data directory. It names per-instance
     /// resources such as the Windows named pipe; it is not a secret.
     pub fn scope_id(&self) -> String {
@@ -154,6 +189,32 @@ mod tests {
         let dirs = DataDirs::at("/tmp/regards-test");
         assert_eq!(dirs.lock_file(), Path::new("/tmp/regards-test/daemon.lock"));
         assert_eq!(dirs.runtime(), Path::new("/tmp/regards-test/run"));
+    }
+
+    #[test]
+    fn removing_the_data_leaves_the_installed_programs() {
+        let temp = tempfile::tempdir().unwrap();
+        let dirs = DataDirs::at(temp.path());
+        for name in [
+            "mail.db",
+            "blobs/ab/cd",
+            "blobs/tool.exe",
+            "regards.exe",
+            "Uninstall.EXE",
+            "kept",
+        ] {
+            let path = temp.path().join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, b"x").unwrap();
+        }
+        assert_eq!(dirs.remove_kept(&[temp.path().join("kept")]), 0);
+        let mut left: Vec<String> = std::fs::read_dir(temp.path())
+            .unwrap()
+            .flatten()
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .collect();
+        left.sort();
+        assert_eq!(left, ["Uninstall.EXE", "kept", "regards.exe"]);
     }
 
     #[test]
