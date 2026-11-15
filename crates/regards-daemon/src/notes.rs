@@ -147,6 +147,7 @@ pub(crate) async fn held(state: &State, params: &NoteAddParams, review: Review) 
         subject: description.clone(),
         description,
         draft: None,
+        send: None,
         people: vec![Person {
             name: None,
             address: Some(address),

@@ -594,7 +594,8 @@ pub(crate) const TOOLS: &[Tool] = &[
     Tool {
         name: "hold",
         description: "What became of a request that waits for the person: pending, approved (with its \
-                      result), rejected, expired or failed.",
+                      result), rejected, expired or failed. For a send, `repeats` says the same message \
+                      was already asked to be sent within the last day.",
         access: Access::Read,
         method: "hold.get",
         params: &[first("hold_id", Kind::Integer, "The hold (from `held.hold_id`).")],

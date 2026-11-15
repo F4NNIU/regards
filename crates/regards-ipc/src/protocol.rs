@@ -911,6 +911,21 @@ pub struct HoldView {
     /// it could not run.
     pub result: Option<Value>,
     pub error: Option<String>,
+    /// For a send: the same message (recipients, subject, text) was already
+    /// asked to be sent in this account within the last day.
+    #[serde(default)]
+    pub repeats: Option<HoldRepeat>,
+}
+
+/// The earlier request to send the same message, in [`HoldView::repeats`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HoldRepeat {
+    /// When it was asked (Unix ms).
+    pub asked_at: i64,
+    /// The hold it waited as, and what became of it; `None` when it went
+    /// by itself after the account's undo window.
+    pub hold_id: Option<i64>,
+    pub status: Option<HoldStatus>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

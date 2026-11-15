@@ -19,7 +19,7 @@ use regards_store::identities::{self, Identity};
 use regards_store::marks::{self, Mark};
 use regards_store::notices::{self, Kind, NewNotice};
 use regards_store::outbox::{self, Entry, NewEntry, State as EntryState};
-use regards_store::{StoreError, accounts, mailboxes, messages};
+use regards_store::{StoreError, accounts, agent_sends, mailboxes, messages};
 use rusqlite::Transaction;
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -752,7 +752,25 @@ pub(crate) async fn send_for_agent(
     params: DraftSendParams,
     window: u32,
 ) -> Result<Value, RpcError> {
-    queue_send(state, params, None, window, true).await
+    // Kept, so that the same message asked again waits for the person.
+    let id = params.id;
+    let asked = state
+        .store
+        .read(move |conn| {
+            Ok(drafts::get(conn, id)?.map(|draft| (draft.account_id.clone(), agent_sends::fingerprint(&draft))))
+        })
+        .await
+        .map_err(crate::session::internal)?;
+    let queued = queue_send(state, params, None, window, true).await?;
+    if let Some((account, fingerprint)) = asked {
+        let now = now_ms();
+        state
+            .store
+            .write_quiet(move |tx| agent_sends::record(tx, &account, &fingerprint, now, None))
+            .await
+            .map_err(crate::session::internal)?;
+    }
+    Ok(queued)
 }
 
 /// Agents' sends that go without approval, per account and hour; past them,
@@ -760,7 +778,8 @@ pub(crate) async fn send_for_agent(
 const AGENT_SENDS_PER_HOUR: u32 = 20;
 
 /// The undo window an agent's send of `draft_id` goes with, or `None`: it
-/// waits for approval (the default, or past [`AGENT_SENDS_PER_HOUR`]).
+/// waits for approval (the default, past [`AGENT_SENDS_PER_HOUR`], or the
+/// same message asked again within a day).
 pub(crate) async fn agent_send_window(state: &State, draft_id: i64) -> Result<Option<u32>, RpcError> {
     let now = now_ms();
     state
@@ -772,6 +791,12 @@ pub(crate) async fn agent_send_window(state: &State, draft_id: i64) -> Result<Op
             let Some(window) = accounts::agent_send_window(conn, &draft.account_id)? else {
                 return Ok(None);
             };
+            // The same message asked again within a day: the person looks first.
+            let since = now - agent_sends::REPEAT_WITHIN_MS;
+            let fingerprint = agent_sends::fingerprint(&draft);
+            if agent_sends::same_before(conn, &draft.account_id, &fingerprint, since, None)?.is_some() {
+                return Ok(None);
+            }
             let sent = notices::count_since(conn, &draft.account_id, Kind::AgentSending, now - 3_600_000)?;
             Ok((sent < AGENT_SENDS_PER_HOUR).then_some(window))
         })

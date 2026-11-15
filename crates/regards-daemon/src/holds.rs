@@ -12,13 +12,13 @@
 use crate::{State, actions, compose};
 use regards_core::headers::Person;
 use regards_ipc::protocol::{
-    DraftSendParams, HoldApproveParams, HoldListParams, HoldListResult, HoldReason, HoldRef, HoldStatus, HoldView,
-    RpcError, codes, methods,
+    DraftSendParams, HoldApproveParams, HoldListParams, HoldListResult, HoldReason, HoldRef, HoldRepeat, HoldStatus,
+    HoldView, RpcError, codes, methods,
 };
 use regards_store::audit::{self, Decision};
 use regards_store::holds::{self, Hold, NewHold, Reason, Status};
 use regards_store::notices::{self, Kind, NewNotice};
-use regards_store::{StoreError, drafts};
+use regards_store::{StoreError, agent_sends, drafts};
 use serde_json::{Value, json};
 use std::sync::Arc;
 
@@ -44,6 +44,8 @@ pub(crate) struct About {
     pub description: String,
     /// For a send: the draft and its version.
     pub draft: Option<(i64, i64)>,
+    /// For a send: the message's fingerprint, to notice it asked twice.
+    pub send: Option<String>,
     /// The notice's who and what.
     pub people: Vec<Person>,
     pub subject: String,
@@ -74,6 +76,7 @@ pub(crate) async fn hold(state: &State, asker: Asker<'_>, about: About) -> RpcEr
         reason: about.reason,
         draft: about.draft,
     };
+    let (send, send_account) = (about.send.clone(), about.account_id.clone());
     let notice = NewNotice {
         account_id: about.account_id,
         kind: Kind::AgentAsks,
@@ -87,6 +90,9 @@ pub(crate) async fn hold(state: &State, asker: Asker<'_>, about: About) -> RpcEr
         .write(move |tx| {
             let id = holds::add(tx, &new)?;
             notices::add(tx, &notice, now)?;
+            if let Some(fingerprint) = &send {
+                agent_sends::record(tx, &send_account, fingerprint, now, Some(id))?;
+            }
             Ok(id)
         })
         .await;
@@ -139,6 +145,7 @@ pub(crate) async fn hold_send(state: &State, asker: Asker<'_>, params: &DraftSen
         reason: Reason::Sending,
         description: format!("{verb} “{subject}” to {}", names(&people)),
         draft: Some((draft.id, draft.updated_at)),
+        send: Some(agent_sends::fingerprint(&draft)),
         people,
         subject,
     };
@@ -197,12 +204,15 @@ pub(crate) async fn list(state: &State, params: HoldListParams) -> Result<Value,
     let (pending, now) = (params.pending, compose::now_ms());
     let holds = state
         .store
-        .read(move |conn| holds::list(conn, pending, now, limit))
+        .read(move |conn| {
+            holds::list(conn, pending, now, limit)?
+                .into_iter()
+                .map(|hold| viewed(conn, hold, now))
+                .collect::<Result<Vec<_>, _>>()
+        })
         .await
         .map_err(crate::session::internal)?;
-    Ok(json!(HoldListResult {
-        holds: holds.into_iter().map(view).collect(),
-    }))
+    Ok(json!(HoldListResult { holds }))
 }
 
 /// One hold: for an agent, if its account is in `scope`.
@@ -210,12 +220,15 @@ pub(crate) async fn get(state: &State, params: HoldRef, scope: Option<Vec<String
     let (id, now) = (params.id, compose::now_ms());
     let found = state
         .store
-        .read(move |conn| holds::get(conn, id, now))
+        .read(move |conn| match holds::get(conn, id, now)? {
+            Some(hold) => Ok(Some((hold.hold.account_id.clone(), viewed(conn, hold, now)?))),
+            None => Ok(None),
+        })
         .await
         .map_err(crate::session::internal)?
-        .filter(|hold| scope.is_none_or(|open| open.contains(&hold.hold.account_id)))
+        .filter(|(account, _)| scope.is_none_or(|open| open.contains(account)))
         .ok_or_else(|| RpcError::new(codes::NOT_FOUND, "no such hold"))?;
-    Ok(json!(view(found)))
+    Ok(json!(found.1))
 }
 
 /// The person approves: it runs, as the agent asked; a suggested voice as
@@ -286,10 +299,10 @@ pub(crate) async fn reject(state: &State, params: HoldRef) -> Result<Value, RpcE
         .await
         .map_err(crate::session::internal)?
         .value;
-    let Some(hold) = decided else {
+    if decided.is_none() {
         return Err(not_waiting(state, id).await);
     };
-    Ok(json!(view(hold)))
+    get(state, HoldRef { id }, None).await
 }
 
 async fn not_waiting(state: &State, id: i64) -> RpcError {
@@ -336,7 +349,42 @@ async fn run(state: &Arc<State>, hold: &Hold, text: Option<String>) -> Result<Va
     }
 }
 
-fn view(hold: Hold) -> HoldView {
+/// A hold as shown, with the earlier request to send the same message if
+/// there was one within the last day.
+fn viewed(conn: &rusqlite::Connection, hold: Hold, now: i64) -> Result<HoldView, StoreError> {
+    let mut repeats = None;
+    if hold.hold.reason == Reason::Sending
+        && let Some(asked) = agent_sends::of_hold(conn, hold.id)?
+    {
+        let since = asked.asked_at - agent_sends::REPEAT_WITHIN_MS;
+        let earlier = agent_sends::same_before(conn, &hold.hold.account_id, &asked.fingerprint, since, Some(asked.id))?;
+        if let Some(earlier) = earlier {
+            let status = match earlier.hold_id {
+                Some(id) => holds::get(conn, id, now)?.map(|hold| status_view(hold.status)),
+                None => None,
+            };
+            repeats = Some(HoldRepeat {
+                asked_at: earlier.asked_at,
+                // A hold forgotten since is not named.
+                hold_id: earlier.hold_id.filter(|_| status.is_some()),
+                status,
+            });
+        }
+    }
+    Ok(view(hold, repeats))
+}
+
+fn status_view(status: Status) -> HoldStatus {
+    match status {
+        Status::Pending => HoldStatus::Pending,
+        Status::Approved => HoldStatus::Approved,
+        Status::Rejected => HoldStatus::Rejected,
+        Status::Expired => HoldStatus::Expired,
+        Status::Failed => HoldStatus::Failed,
+    }
+}
+
+fn view(hold: Hold, repeats: Option<HoldRepeat>) -> HoldView {
     let Hold {
         id,
         hold,
@@ -363,16 +411,11 @@ fn view(hold: Hold) -> HoldView {
             Reason::Note => HoldReason::Note,
         },
         draft_id: hold.draft.map(|(id, _)| id),
-        status: match status {
-            Status::Pending => HoldStatus::Pending,
-            Status::Approved => HoldStatus::Approved,
-            Status::Rejected => HoldStatus::Rejected,
-            Status::Expired => HoldStatus::Expired,
-            Status::Failed => HoldStatus::Failed,
-        },
+        status: status_view(status),
         decided_at,
         result: result.and_then(|text| serde_json::from_str(&text).ok()),
         error,
+        repeats,
     }
 }
 
