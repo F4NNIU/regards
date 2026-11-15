@@ -16,7 +16,7 @@ description: Read, search, organise and draft the person's email in Regards, the
 The person reads their mail in Regards. The `regards` command lets you act on it, as an agent: each account allows agents what its owner chose in Regards › Settings › Agents, and only they can change it.
 
 - **Read:** list, search and read mail, the person's voice and notes about people. Reading never marks it read.
-- **Triage:** also organise it (archive, move, flag, pin, snooze), write drafts, keep notes about people and suggest a voice.
+- **Triage:** also organise it (archive, move, label, flag, pin, snooze), write drafts, keep notes about people and suggest a voice.
 - **Send:** also ask to send. Every send waits for the person to approve it in Regards.
 
 An account not open to agents is not there for you. When something is refused, the error says which setting the person can change.

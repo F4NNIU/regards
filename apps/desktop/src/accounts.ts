@@ -652,8 +652,13 @@ export function messageLabels(ids: number[]): Promise<MessageLabels[]> {
  * Add and remove Gmail labels on messages: each label added is a copy in its
  * folder, each removed is that copy deleted (the mail stays in All Mail).
  * `gone`: copies deleted, any of `ids` among them (it left that folder).
+ * `undo`: set when a label changed; undoing puts the labels back as they were.
  */
-export function setLabels(ids: number[], add: number[], remove: number[]): Promise<{ messages: MessageLabels[]; gone: number[] }> {
+export function setLabels(
+  ids: number[],
+  add: number[],
+  remove: number[],
+): Promise<{ messages: MessageLabels[]; gone: number[]; undo: UndoInfo | null }> {
   return invoke("message_set_labels", { ids, add, remove });
 }
 

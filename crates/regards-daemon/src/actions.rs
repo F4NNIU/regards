@@ -564,6 +564,49 @@ struct Inverse {
     /// Drafts deleted, to make again as they were.
     #[serde(default)]
     drafts_deleted: Vec<crate::compose::KeptDraft>,
+    /// Labels added, to remove again.
+    #[serde(default)]
+    labels_added: Vec<crate::labels::LabelUndo>,
+    /// Labels removed, to add again.
+    #[serde(default)]
+    labels_removed: Vec<crate::labels::LabelUndo>,
+}
+
+/// Keep how to undo labels added and removed, for a while. `None` when
+/// nothing changed.
+pub(crate) fn record_labels_undo(
+    tx: &rusqlite::Transaction<'_>,
+    added: &[crate::labels::LabelUndo],
+    removed: &[crate::labels::LabelUndo],
+    now: i64,
+) -> Result<Option<UndoInfo>, StoreError> {
+    if added.is_empty() && removed.is_empty() {
+        return Ok(None);
+    }
+    let count = added
+        .iter()
+        .chain(removed)
+        .map(|(id, ..)| *id)
+        .collect::<BTreeSet<_>>()
+        .len();
+    let messages = if count == 1 {
+        "1 message".to_owned()
+    } else {
+        format!("{count} messages")
+    };
+    let description = match (added.is_empty(), removed.is_empty()) {
+        (false, true) => format!("Labelled {messages}"),
+        (true, false) => format!("Removed a label from {messages}"),
+        _ => format!("Changed the labels of {messages}"),
+    };
+    let inverse = serde_json::to_string(&Inverse {
+        labels_added: added.to_vec(),
+        labels_removed: removed.to_vec(),
+        ..Inverse::default()
+    })
+    .expect("plain data serializes");
+    let id = undo::record(tx, &description, &inverse, now, now + UNDO_FOR_MS)?;
+    Ok(Some(UndoInfo { id, description }))
 }
 
 /// Keep how to undo a draft's deletion (or a failed message's, `description`
@@ -864,8 +907,11 @@ pub(crate) async fn apply_undo(state: &Arc<State>, params: UndoParams) -> Result
             for kept in &inverse.drafts_deleted {
                 drafts += usize::from(crate::compose::restore_draft(tx, kept, now)?.is_some());
             }
+            let (labels, label_accounts) =
+                crate::labels::undo(tx, &inverse.labels_added, &inverse.labels_removed, now)?;
+            accounts.extend(label_accounts);
             Ok((
-                moved + inverse.marks.len() + inverse.unblock.len() + flags.len() + notes + drafts,
+                moved + inverse.marks.len() + inverse.unblock.len() + flags.len() + notes + drafts + labels,
                 accounts,
             ))
         })

@@ -129,11 +129,12 @@ pub mod methods {
     /// read) covers. `ui` only, as `thread.get`.
     pub const MESSAGE_CONVERSATION_IDS: &str = "message.conversation_ids";
     /// Each message's Gmail labels: the label folders holding a copy of it,
-    /// and labels added here not synced back yet. `ui` only for now.
+    /// and labels added here not synced back yet. Agents need `read`.
     pub const MESSAGE_LABELS: &str = "message.labels";
     /// Add and remove Gmail labels: a label added is a copy in its folder, one
     /// removed is that copy deleted. Applied at once, sent by the operation
-    /// queue. `ui` only.
+    /// queue, and undoable. Agents need `triage`, and only on a Gmail account:
+    /// elsewhere the copy in a folder may be the only one.
     pub const MESSAGE_SET_LABELS: &str = "message.set_labels";
     /// Mark messages read or unread, flagged or not. Applied at once, sent to the
     /// server by the operation queue (ADR-0010). `ui` only for now.
@@ -1453,6 +1454,9 @@ pub struct SetLabelsResult {
     /// Copies deleted with a label removed: gone from the label's folder,
     /// including any of `ids` that was that copy.
     pub gone: Vec<i64>,
+    /// Set when a label was added or removed.
+    #[serde(default)]
+    pub undo: Option<UndoInfo>,
 }
 
 /// The result of [`methods::MESSAGE_CONVERSATION_IDS`].

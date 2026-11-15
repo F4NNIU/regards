@@ -1323,6 +1323,30 @@ async fn live_a_label_is_a_copy_in_the_labels_folder() {
     assert_eq!(listed.messages[0].labels, [garden.id], "now from the synced copy");
     assert_eq!(messages(&mut desktop, garden.id).await.messages.len(), 1);
 
+    // Undone: the label goes again, here and on the server.
+    let undo = added.undo.expect("labelling can be undone");
+    assert_eq!(undo.description, "Labelled 1 message");
+    let undone: UndoResult = desktop
+        .call(methods::UNDO_APPLY, UndoParams { id: undo.id })
+        .await
+        .unwrap();
+    assert_eq!(undone.undone, 1);
+    let listed: LabelsResult = desktop
+        .call(methods::MESSAGE_LABELS, MessageIds { ids: vec![row.id] })
+        .await
+        .unwrap();
+    assert!(listed.messages[0].labels.is_empty(), "{listed:?}");
+    server_count_becomes(&mut seed, b"Garden", 0).await;
+    server_count_becomes(&mut seed, b"INBOX", 1).await;
+
+    // Labelled again, for what follows.
+    let _: SetLabelsResult = desktop
+        .call(methods::MESSAGE_SET_LABELS, set(vec![garden.id], vec![]))
+        .await
+        .unwrap();
+    server_count_becomes(&mut seed, b"Garden", 1).await;
+    sync(&mut desktop, &account.id).await;
+
     // Removed: the copy goes, the message stays where it was.
     let removed: SetLabelsResult = desktop
         .call(methods::MESSAGE_SET_LABELS, set(vec![], vec![garden.id]))
@@ -1332,6 +1356,28 @@ async fn live_a_label_is_a_copy_in_the_labels_folder() {
     assert_eq!(removed.gone.len(), 1, "the copy in Garden");
     server_count_becomes(&mut seed, b"Garden", 0).await;
     server_count_becomes(&mut seed, b"INBOX", 1).await;
+
+    // Undone: the label is back, copied from the message that stayed.
+    let undo = removed.undo.expect("removing a label can be undone");
+    assert_eq!(undo.description, "Removed a label from 1 message");
+    let undone: UndoResult = desktop
+        .call(methods::UNDO_APPLY, UndoParams { id: undo.id })
+        .await
+        .unwrap();
+    assert_eq!(undone.undone, 1);
+    let listed: LabelsResult = desktop
+        .call(methods::MESSAGE_LABELS, MessageIds { ids: vec![row.id] })
+        .await
+        .unwrap();
+    assert_eq!(listed.messages[0].labels, [garden.id]);
+    server_count_becomes(&mut seed, b"Garden", 1).await;
+
+    // Nothing changed: nothing to undo.
+    let same: SetLabelsResult = desktop
+        .call(methods::MESSAGE_SET_LABELS, set(vec![garden.id], vec![]))
+        .await
+        .unwrap();
+    assert!(same.undo.is_none());
 
     // The inbox is not a label.
     match desktop
@@ -3549,6 +3595,30 @@ async fn live_agents_organise_mail_and_the_app_undoes_it() {
         .unwrap();
     assert_eq!(marked.undo.as_ref().unwrap().description, "Flagged 1 message");
     assert_eq!(subjects(messages(&mut desktop, inbox).await), ["Invoice"]);
+
+    // Labels are Gmail's. On another server the copy in a folder may be the
+    // only one, so an agent files mail there with a move.
+    {
+        use regards_ipc::ClientError;
+        use regards_ipc::protocol::{SetLabelsParams, codes};
+        let labelled = agent
+            .call::<_, Value>(
+                methods::MESSAGE_SET_LABELS,
+                SetLabelsParams {
+                    ids: vec![id("Invoice")],
+                    add: vec![inbox],
+                    remove: vec![],
+                },
+            )
+            .await;
+        match labelled {
+            Err(ClientError::Rpc(error)) => {
+                assert_eq!(error.code, codes::CONFLICT);
+                assert!(error.message.contains("only Gmail accounts"), "{}", error.message);
+            }
+            other => panic!("expected a refusal, got {other:?}"),
+        }
+    }
 
     // The app sees what it did, how things stood, and undoes the archiving.
     let activity: AgentActivityResult = desktop

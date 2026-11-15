@@ -303,6 +303,32 @@ pub(crate) const TOOLS: &[Tool] = &[
         read_only: false,
     },
     Tool {
+        name: "labels",
+        description: "The Gmail labels of messages: for each, the ids of its label folders. On Gmail, \
+                      the labels are the account's own folders (from `folders`: those without a role, \
+                      outside `[Gmail]`).",
+        access: Access::Read,
+        method: "message.labels",
+        params: &[MESSAGES],
+        links: Links::None,
+        read_only: true,
+    },
+    Tool {
+        name: "label",
+        description: "Add Gmail labels to messages, or remove them; the messages stay where they are. \
+                      A label is one of the account's own folders (from `folders`). Gmail accounts \
+                      only: elsewhere, `move` the message to a folder. Undoable from the app.",
+        access: Access::Triage,
+        method: "message.set_labels",
+        params: &[
+            MESSAGES,
+            param("add", Kind::Integers, "The labels to add (their folder ids)."),
+            param("remove", Kind::Integers, "The labels to remove (their folder ids)."),
+        ],
+        links: Links::None,
+        read_only: false,
+    },
+    Tool {
         name: "pin",
         description: "Pin messages to the top of the inbox, or unpin them.",
         access: Access::Triage,
@@ -666,7 +692,20 @@ pub(crate) fn request(tool: &Tool, args: &Map<String, Value>) -> Result<Value, S
             "view": text("view"),
             "limit": number("limit"),
         }),
-        "archive" | "trash" | "delete_for_good" => json!({ "ids": ids("message_ids")? }),
+        "archive" | "trash" | "delete_for_good" | "labels" => json!({ "ids": ids("message_ids")? }),
+        "label" => {
+            let given = |name: &str| -> Result<Vec<i64>, String> {
+                match args.get(name) {
+                    None | Some(Value::Null) => Ok(Vec::new()),
+                    Some(_) => ids(name),
+                }
+            };
+            let (add, remove) = (given("add")?, given("remove")?);
+            if add.is_empty() && remove.is_empty() {
+                return Err("say which labels to add, to remove, or both".into());
+            }
+            json!({ "ids": ids("message_ids")?, "add": add, "remove": remove })
+        }
         "move" => json!({ "ids": ids("message_ids")?, "mailbox_id": number("mailbox_id") }),
         "mark" => {
             let (seen, flagged) = (flag("read"), flag("flagged"));
@@ -1013,10 +1052,12 @@ mod tests {
                     reads::<MessageRef>(name, request)
                 }
                 methods::MESSAGE_VIEW => reads::<ViewParams>(name, request),
-                methods::MESSAGE_ARCHIVE | methods::MESSAGE_TRASH | methods::MESSAGE_DELETE => {
-                    reads::<MessageIds>(name, request)
-                }
+                methods::MESSAGE_ARCHIVE
+                | methods::MESSAGE_TRASH
+                | methods::MESSAGE_DELETE
+                | methods::MESSAGE_LABELS => reads::<MessageIds>(name, request),
                 methods::MESSAGE_MOVE => reads::<MoveParams>(name, request),
+                methods::MESSAGE_SET_LABELS => reads::<SetLabelsParams>(name, request),
                 methods::MESSAGE_SET_FLAGS => reads::<SetFlagsParams>(name, request),
                 methods::MESSAGE_PIN => reads::<PinParams>(name, request),
                 methods::MESSAGE_SET_ASIDE => reads::<AsideParams>(name, request),
