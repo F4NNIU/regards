@@ -11,21 +11,30 @@
 use crate::State;
 use crate::sync::{self, SyncError};
 use regards_imap::{ImapError, Moved, Session, SystemFlag};
+use regards_ipc::protocol::{
+    RefusedChange, RpcError, ServerChange, ServerStatusParams, ServerStatusResult, WaitingChange,
+};
 use regards_store::mailboxes::{self, Mailbox};
 use regards_store::operations::{self, FlagName, Operation, OperationKind};
-use regards_store::{labels, messages};
-use std::collections::HashMap;
+use regards_store::{accounts, labels, messages};
+use serde_json::{Value, json};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Notify;
 
 const FIRST_RETRY: Duration = Duration::from_secs(5);
 const MAX_RETRY: Duration = Duration::from_secs(10 * 60);
+/// How many refused changes are kept to be asked about.
+const MAX_REFUSED: usize = 200;
 
 /// One runner per account with pending work.
 #[derive(Default)]
 pub(crate) struct Queue {
     runners: Mutex<HashMap<String, Arc<Notify>>>,
+    /// The changes the server refused since the daemon started, newest first
+    /// (`server.status`).
+    refused: Mutex<VecDeque<RefusedChange>>,
     /// The daemon's state, for waking from code that holds only a reference to it.
     state: std::sync::OnceLock<std::sync::Weak<State>>,
 }
@@ -94,6 +103,22 @@ impl Queue {
             Ok(_) => state.queue.wake(state, account_id),
             Err(error) => tracing::warn!(%error, "cannot reschedule queued actions"),
         }
+    }
+
+    /// Keep a change the server refused, for those who ask what became of it.
+    fn note_refused(&self, refused: RefusedChange) {
+        let mut kept = self.refused.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        kept.push_front(refused);
+        kept.truncate(MAX_REFUSED);
+    }
+
+    /// The changes the server refused in `accounts`, newest first.
+    fn refused_in(&self, accounts: &[String]) -> Vec<RefusedChange> {
+        let kept = self.refused.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        kept.iter()
+            .filter(|refused| accounts.contains(&refused.account_id))
+            .cloned()
+            .collect()
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, Arc<Notify>>> {
@@ -312,9 +337,14 @@ async fn give_up(
         operation.target_mailbox_id,
     );
     let account = account_id.to_owned();
-    state
+    let committed = state
         .store
         .write(move |tx| {
+            // The messages it was about, before a sync renumbers anything.
+            let message_ids: Vec<i64> = messages::by_uids(tx, source, &uids)?
+                .into_iter()
+                .map(|message| message.id)
+                .collect();
             operations::remove(tx, id)?;
             if kind == OperationKind::Move {
                 // Show the messages where they still are on the server.
@@ -328,9 +358,16 @@ async fn give_up(
                     }
                 }
             }
-            Ok(())
+            Ok(message_ids)
         })
         .await?;
+    state.queue.note_refused(RefusedChange {
+        account_id: account_id.to_owned(),
+        change: change_of(kind),
+        message_ids: committed.value,
+        reason: reason.to_owned(),
+        refused_at: now_ms(),
+    });
     state.sync.note_error(
         account_id,
         &format!("A change could not be made on the server: {reason}"),
@@ -343,6 +380,58 @@ async fn give_up(
         }
     });
     Ok(())
+}
+
+/// How a queued operation reads to those who ask about it.
+fn change_of(kind: OperationKind) -> ServerChange {
+    match kind {
+        OperationKind::Move => ServerChange::Move,
+        OperationKind::Copy => ServerChange::Label,
+        OperationKind::Delete => ServerChange::Delete,
+        OperationKind::AddFlags | OperationKind::RemoveFlags => ServerChange::Flags,
+    }
+}
+
+/// `server.status`: the changes the server has not been told yet, and those
+/// it refused, in `scope` (`None`: the account asked for, or all of them).
+pub(crate) async fn status(
+    state: &State,
+    params: ServerStatusParams,
+    scope: Option<Vec<String>>,
+) -> Result<Value, RpcError> {
+    let asked = params.account_id;
+    let (accounts, waiting) = state
+        .store
+        .read(move |conn| {
+            let accounts: Vec<String> = match (scope, asked) {
+                (Some(scope), _) => scope,
+                (None, Some(account)) => vec![account],
+                (None, None) => accounts::agent_access(conn)?.into_iter().map(|(id, _)| id).collect(),
+            };
+            let mut waiting = Vec::new();
+            for account in &accounts {
+                for operation in operations::waiting(conn, account)? {
+                    waiting.push(WaitingChange {
+                        account_id: account.clone(),
+                        change: change_of(operation.kind),
+                        message_ids: messages::by_uids(conn, operation.mailbox_id, &operation.uids)?
+                            .into_iter()
+                            .map(|message| message.id)
+                            .collect(),
+                        attempts: operation.attempts,
+                        error: operation.last_error,
+                        retry_at: operation.next_attempt_at,
+                    });
+                }
+            }
+            Ok((accounts, waiting))
+        })
+        .await
+        .map_err(crate::session::internal)?;
+    Ok(json!(ServerStatusResult {
+        waiting,
+        refused: state.queue.refused_in(&accounts),
+    }))
 }
 
 async fn postpone(state: &State, operations: &[Operation], error: &str) -> Result<(), SyncError> {

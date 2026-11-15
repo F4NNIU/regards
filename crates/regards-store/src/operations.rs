@@ -132,6 +132,19 @@ pub fn due(conn: &Connection, account_id: &str, now: i64) -> Result<Vec<Operatio
     )
 }
 
+/// Every pending operation of an account, oldest first: what the server has
+/// not been told yet.
+pub fn waiting(conn: &Connection, account_id: &str) -> Result<Vec<Operation>, StoreError> {
+    query(
+        conn,
+        &format!(
+            "SELECT {COLUMNS} FROM operations o JOIN mailboxes m ON m.id = o.mailbox_id \
+             WHERE m.account_id = ?1 ORDER BY o.id"
+        ),
+        params![account_id],
+    )
+}
+
 /// Every pending operation of a mailbox, oldest first.
 pub fn pending(conn: &Connection, mailbox_id: i64) -> Result<Vec<Operation>, StoreError> {
     query(
