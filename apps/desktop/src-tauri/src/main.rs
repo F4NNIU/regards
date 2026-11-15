@@ -12,6 +12,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod agent_apps;
+mod applog;
 mod background;
 mod badge;
 mod command_line;
@@ -1927,7 +1928,7 @@ async fn forward_changes(app: AppHandle) {
                     app.state::<badge::Badge>().poke();
                 }
             }
-            Err(error) => eprintln!("change feed unavailable: {error}"),
+            Err(error) => applog::app_log!("change feed unavailable: {error}"),
         }
         tokio::time::sleep(backoff).await;
         backoff = (backoff * 2).min(Duration::from_secs(30));
@@ -2077,6 +2078,7 @@ fn notifications_set(background: State<'_, background::Background>, on: bool) ->
 }
 
 fn main() {
+    applog::start(DataDirs::resolve().ok().as_ref());
     let app = tauri::Builder::default()
         // Must come first: a second app instance would replace this one's daemon.
         .plugin(tauri_plugin_dialog::init())

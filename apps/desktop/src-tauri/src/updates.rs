@@ -168,7 +168,7 @@ pub(crate) async fn run(app: AppHandle) {
             && due
             && let Err(error) = check_and_tell(&app).await
         {
-            eprintln!("{error}");
+            crate::applog::app_log!("{error}");
         }
         tokio::time::sleep(LOOK_EVERY).await;
     }

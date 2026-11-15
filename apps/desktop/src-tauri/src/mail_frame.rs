@@ -88,7 +88,7 @@ pub(crate) fn handle(ctx: UriSchemeContext<'_, Wry>, request: Request<Vec<u8>>, 
         Some(Route::Open(url)) => {
             // The URL came from a message: it is not logged.
             if let Err(error) = open::that_detached(url.as_str()) {
-                eprintln!("could not open a link in the browser: {}", error.kind());
+                crate::applog::app_log!("could not open a link in the browser: {}", error.kind());
             }
             responder.respond(no_content());
         }

@@ -274,7 +274,7 @@ impl Background {
     pub(crate) fn set_told_update(&self, version: &str) {
         *self.told_update.lock().expect("never poisoned") = Some(version.to_owned());
         if let Err(error) = self.save(self.current()) {
-            eprintln!("updates: {error}");
+            crate::applog::app_log!("updates: {error}");
         }
     }
 
@@ -285,7 +285,7 @@ impl Background {
             return;
         }
         if let Err(error) = self.save(self.current()) {
-            eprintln!("background mode: {error}");
+            crate::applog::app_log!("background mode: {error}");
         }
         let body = if cfg!(target_os = "macos") {
             "It stays in the menu bar so snoozed mail comes back and scheduled messages go. Quit it from the menu bar icon."
@@ -299,7 +299,7 @@ impl Background {
             .body(crate::lang::tr(body))
             .show();
         if let Err(error) = shown {
-            eprintln!("notification: {error}");
+            crate::applog::app_log!("notification: {error}");
         }
     }
 
@@ -371,13 +371,13 @@ pub(crate) fn setup(app: &App) -> tauri::Result<()> {
                 // The menu has already toggled its check mark.
                 let on = check.is_checked().unwrap_or(true);
                 if let Err(error) = app.state::<Background>().set(app, on) {
-                    eprintln!("background mode: {error}");
+                    crate::applog::app_log!("background mode: {error}");
                 }
             }
             "notifications" => {
                 let on = notify.is_checked().unwrap_or(true);
                 if let Err(error) = app.state::<Background>().set_notifications(on) {
-                    eprintln!("notifications: {error}");
+                    crate::applog::app_log!("notifications: {error}");
                 }
             }
             "quit" => self::quit(app),
@@ -549,7 +549,7 @@ pub(crate) fn start_at_login(app: &AppHandle, on: bool) {
         }
     };
     if let Err(error) = result {
-        eprintln!("start at login: {error}");
+        crate::applog::app_log!("start at login: {error}");
     }
 }
 
