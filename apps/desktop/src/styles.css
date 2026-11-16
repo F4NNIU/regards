@@ -6202,6 +6202,21 @@ button.sender-row:hover:not(:disabled) {
   box-shadow: var(--shadow-sm);
 }
 
+/* Across the whole width, each choice the same size; a few quieter words after a label. */
+.choice.wide {
+  display: flex;
+}
+
+.choice.wide button {
+  flex: 1;
+  height: 32px;
+}
+
+.choice button .muted {
+  margin-left: 4px;
+  font-weight: 400;
+}
+
 .account-list {
   display: grid;
   gap: 10px;
@@ -7809,31 +7824,6 @@ button.sender-row:hover:not(:disabled) {
   height: 40px;
   border-radius: 10px;
   font-size: 14.5px;
-}
-
-.signup-segmented {
-  display: flex;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--chip);
-}
-
-.signup-segmented button {
-  display: inline-flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 32px;
-  border-radius: 8px;
-  color: var(--text-2);
-  font-size: 13px;
-}
-
-.signup-segmented button[aria-checked="true"] {
-  background: var(--bg-elev);
-  box-shadow: var(--shadow-sm), 0 1px 3px rgb(0 0 0 / 0.08);
-  color: var(--text);
 }
 
 /* Under a server's fields: its check. */

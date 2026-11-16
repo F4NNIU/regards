@@ -32,6 +32,7 @@ import { OauthWaiting, PROVIDERS, useOauth } from "./OauthSignIn";
 import { useShortcuts } from "./shortcuts";
 import { t } from "./i18n";
 import { PortInput, SecretInput } from "./Fields";
+import { Choice as Radios } from "./SettingsControls";
 
 /** An address worth looking up: something@domain.tld. */
 const COMPLETE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -889,20 +890,16 @@ function ServersForm({
             <PortInput value={input.smtpPort} onChange={(port) => field("smtpPort", port)} />
           </label>
         </div>
-        <div className="signup-segmented" role="radiogroup" aria-label={t("Encryption for sending")}>
-          {(["starttls", "tls"] as const).map((security) => (
-            <button
-              key={security}
-              type="button"
-              role="radio"
-              aria-checked={input.smtpSecurity === security}
-              onClick={() => onSecurity(security)}
-            >
-              <strong>{security === "tls" ? t("TLS") : t("STARTTLS")}</strong>
-              <span className="muted">{t("· port")} {security === "tls" ? 465 : 587}</span>
-            </button>
-          ))}
-        </div>
+        <Radios<ConnectionSecurity>
+          wide
+          label={t("Encryption for sending")}
+          value={input.smtpSecurity}
+          options={[
+            { id: "starttls", label: t("STARTTLS"), detail: `${t("· port")} 587` },
+            { id: "tls", label: t("TLS"), detail: `${t("· port")} 465` },
+          ]}
+          onChange={onSecurity}
+        />
         <CheckLine
           server="smtp"
           settings={settings.smtp}

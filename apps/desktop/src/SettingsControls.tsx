@@ -31,20 +31,23 @@ export function Option({
   );
 }
 
-/** A few choices side by side. */
+/** A few choices side by side. `wide`: across the whole width, each choice the same size. */
 export function Choice<T extends string>({
   value,
   options,
   onChange,
   label,
+  wide,
 }: {
   value: T;
-  options: { id: T; label: string }[];
+  /** `detail`: a few quieter words after the label. */
+  options: { id: T; label: string; detail?: string }[];
   onChange: (value: T) => void;
   label: string;
+  wide?: boolean;
 }) {
   return (
-    <span className="choice" role="radiogroup" aria-label={label} onKeyDown={(event) => radioKeys(event)}>
+    <span className={wide ? "choice wide" : "choice"} role="radiogroup" aria-label={label} onKeyDown={(event) => radioKeys(event)}>
       {options.map((option, index) => (
         <button
           key={option.id}
@@ -56,6 +59,7 @@ export function Choice<T extends string>({
           onClick={() => onChange(option.id)}
         >
           {option.label}
+          {option.detail && <span className="muted">{option.detail}</span>}
         </button>
       ))}
     </span>
