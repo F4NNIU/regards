@@ -22,6 +22,10 @@
   --bg-elev: #ffffff;
   --hover: #f3f5f4;
   --chip: #eff1f0;
+  /* Buttons have no border: a light tint of the surface, so they show on white and on grey alike. */
+  --button: rgb(16 26 21 / 0.065);
+  --button-hover: rgb(16 26 21 / 0.1);
+  --button-active: rgb(16 26 21 / 0.14);
   --notice: #f4f6f5;
   --text: #1a1d1c;
   --text-2: #4a514e;
@@ -97,6 +101,9 @@
     --bg-elev: #1f2221;
     --hover: #222625;
     --chip: #2a2e2c;
+    --button: rgb(255 255 255 / 0.08);
+    --button-hover: rgb(255 255 255 / 0.12);
+    --button-active: rgb(255 255 255 / 0.16);
     --notice: #232726;
     --text: #e8ebe9;
     --text-2: #bcc3bf;
@@ -144,6 +151,9 @@
   --bg-elev: #1f2221;
   --hover: #222625;
   --chip: #2a2e2c;
+  --button: rgb(255 255 255 / 0.08);
+  --button-hover: rgb(255 255 255 / 0.12);
+  --button-active: rgb(255 255 255 / 0.16);
   --notice: #232726;
   --text: #e8ebe9;
   --text-2: #bcc3bf;
@@ -905,6 +915,13 @@ kbd {
 
 /* ---------- Buttons ---------- */
 
+/*
+ * No button has a border. Standard: a soft grey fill. Primary: green, one per window.
+ * Soft: pale green, for what the app suggests (sign in again, undo). Ghost: no fill until
+ * the pointer is over it, for cards and toolbars. Danger: red text; danger-fill confirms
+ * a deletion. The border stays, transparent, so sizes don't change and Windows' contrast
+ * themes still draw an outline.
+ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -912,17 +929,21 @@ kbd {
   gap: 7px;
   height: var(--control);
   padding: 0 14px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid transparent;
   border-radius: var(--control-radius);
-  background: var(--bg-elev);
+  background: var(--button);
   color: var(--text);
   font-weight: 500;
   white-space: nowrap;
-  transition: background 0.12s;
+  transition: background 0.12s, color 0.12s;
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--hover);
+  background: var(--button-hover);
+}
+
+.btn:active:not(:disabled) {
+  background: var(--button-active);
 }
 
 .btn:disabled {
@@ -937,9 +958,28 @@ kbd {
 }
 
 .btn.ghost {
-  border-color: transparent;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-2);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--pill);
+  color: var(--text);
+}
+
+.btn.ghost:active:not(:disabled) {
+  background: var(--pill-strong);
+}
+
+.btn.soft {
+  background: var(--pill);
+  color: var(--accent-hover);
+  font-weight: 600;
+}
+
+.btn.soft:hover:not(:disabled),
+.btn.soft:active:not(:disabled) {
+  background: var(--pill-strong);
 }
 
 .btn.primary,
@@ -961,15 +1001,26 @@ button.danger {
   color: var(--danger);
 }
 
-.btn.danger:hover:not(:disabled) {
+.btn.danger {
+  background: transparent;
+}
+
+.btn.danger:hover:not(:disabled),
+.btn.danger:active:not(:disabled) {
   background: var(--danger-soft);
 }
 
 .btn.danger-fill {
   border-color: var(--danger);
   background: var(--danger);
-  color: #fff;
+  /* White on light red fails contrast in the dark theme: the page colour reads in both. */
+  color: var(--bg);
   font-weight: 600;
+}
+
+.btn.danger-fill:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger) 88%, #000);
+  background: color-mix(in srgb, var(--danger) 88%, #000);
 }
 
 .icon-btn {
@@ -1015,12 +1066,13 @@ button.danger {
   animation: spin 0.9s linear infinite;
 }
 
+/* Two joined buttons (close, done): soft grey halves split by a hairline of the bar's own colour. */
 .segmented {
   display: inline-flex;
   flex: none;
+  gap: 1px;
   height: 28px;
   overflow: hidden;
-  border: 1px solid var(--border-strong);
   border-radius: 8px;
 }
 
@@ -1028,16 +1080,17 @@ button.danger {
   display: grid;
   place-items: center;
   width: 32px;
+  background: var(--button);
   color: var(--text-2);
 }
 
-.segmented button + button {
-  border-left: 1px solid var(--border-strong);
+.segmented button:hover:not(:disabled) {
+  background: var(--button-hover);
+  color: var(--text);
 }
 
-.segmented button:hover:not(:disabled) {
-  background: var(--hover);
-  color: var(--text);
+.segmented button:active:not(:disabled) {
+  background: var(--button-active);
 }
 
 .segmented button:disabled {
@@ -1984,7 +2037,7 @@ button.list-title {
 }
 
 button.list-title:hover {
-  box-shadow: inset 0 0 0 1px var(--border-strong);
+  background: var(--hover);
 }
 
 .list-name {
@@ -2517,8 +2570,8 @@ button.list-title:hover {
   width: 22px;
   height: 22px;
   margin-left: auto;
-  border: 1.5px solid var(--border-strong);
   border-radius: 50%;
+  background: var(--button);
   color: var(--muted);
   opacity: 0;
 }
@@ -2530,7 +2583,6 @@ button.list-title:hover {
 }
 
 .done-all:hover {
-  border-color: var(--accent);
   background: var(--accent);
   color: var(--accent-text);
 }
@@ -3113,9 +3165,8 @@ button.list-title:hover {
   gap: 6px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid var(--border-strong);
   border-radius: 15px;
-  background: var(--bg-elev);
+  background: var(--button);
   color: var(--text-2);
   font-size: 13px;
 }
@@ -3125,7 +3176,7 @@ button.list-title:hover {
 }
 
 .reader-ask:hover:not(:disabled) {
-  background: var(--hover);
+  background: var(--button-hover);
   color: var(--text);
 }
 
@@ -3780,9 +3831,8 @@ button.list-title:hover {
   gap: 7px;
   height: 34px;
   padding: 0 14px;
-  border: 1px solid rgb(255 255 255 / 0.28);
   border-radius: 9px;
-  background: rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.12);
   color: #f2f4f3;
   font-weight: 500;
 }
@@ -3794,7 +3844,7 @@ button.list-title:hover {
 }
 
 .viewer-btn:hover {
-  background: rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.2);
 }
 
 .viewer-btn:focus-visible,
@@ -4791,13 +4841,12 @@ button.list-title:hover {
   width: 22px;
   height: 22px;
   margin-left: auto;
-  border: 1.5px solid var(--border-strong);
   border-radius: 50%;
+  background: var(--button);
   color: var(--muted);
 }
 
 .category-read:hover {
-  border-color: var(--accent);
   background: var(--accent);
   color: var(--accent-text);
 }
@@ -5647,15 +5696,14 @@ button.sender-row:hover:not(:disabled) {
 .pill-btn {
   height: 28px;
   padding: 0 12px;
-  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  background: var(--bg-elev);
+  background: var(--button);
   font-size: 12.5px;
   font-weight: 500;
 }
 
 .pill-btn:hover {
-  background: var(--hover);
+  background: var(--button-hover);
 }
 
 .agents-said {
@@ -7039,16 +7087,15 @@ button.sender-row:hover:not(:disabled) {
   flex: none;
   height: 22px;
   padding: 0 9px;
-  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: var(--bg);
-  color: var(--accent);
+  background: var(--pill);
+  color: var(--accent-hover);
   font-size: 12px;
   font-weight: 600;
 }
 
 .activity-undo:hover:not(:disabled) {
-  border-color: var(--accent);
+  background: var(--pill-strong);
 }
 
 /* How long it can still be undone, beside the button; then that it no longer can. */
@@ -8000,8 +8047,7 @@ button.sender-row:hover:not(:disabled) {
 
 .signup-check.bad .btn {
   flex: none;
-  border-color: var(--danger);
-  background: var(--bg-elev);
+  background: var(--danger-soft);
   color: var(--danger);
   font-weight: 600;
 }
