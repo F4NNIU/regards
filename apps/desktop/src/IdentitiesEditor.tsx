@@ -1,7 +1,8 @@
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useId, useState } from "react";
 import { type Identity, listIdentities, makeDefaultIdentity, removeIdentity, saveIdentity } from "./identities";
 import { Icon } from "./icons";
 import { t } from "./i18n";
+import { emailProblem } from "./Fields";
 
 /**
  * An account's addresses (plan §5.9): the names and addresses it sends as.
@@ -65,6 +66,10 @@ function IdentityForm({
   const [name, setName] = useState(identity?.name ?? "");
   const [email, setEmail] = useState(identity?.email ?? "");
   const [busy, setBusy] = useState(false);
+  // What is wrong with the address is said once the field is left, not while typing.
+  const [left, setLeft] = useState(false);
+  const problem = emailProblem(email);
+  const problemId = useId();
   const changed = identity === null || name !== identity.name || email !== identity.email;
 
   const run = async (action: () => Promise<unknown>) => {
@@ -81,6 +86,10 @@ function IdentityForm({
   };
   const save = (event: FormEvent) => {
     event.preventDefault();
+    if (problem) {
+      setLeft(true);
+      return;
+    }
     // Its default signature stays as chosen in Settings › Composer › Signatures.
     void run(() =>
       saveIdentity({ id: identity?.id ?? null, account_id: accountId, name, email, signature_id: identity?.signature_id ?? null }),
@@ -88,7 +97,7 @@ function IdentityForm({
   };
 
   return (
-    <form onSubmit={save}>
+    <form onSubmit={save} noValidate>
       <fieldset>
         <legend>
           {identity ? identity.email : t("A new address")}
@@ -104,11 +113,18 @@ function IdentityForm({
             <input
               className="input"
               type="email"
-              required
               value={email}
+              aria-invalid={left && problem !== null}
+              aria-describedby={left && problem ? problemId : undefined}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setLeft(true)}
               placeholder="ada@example.org"
             />
+            {left && problem && (
+              <span id={problemId} className="field-error" role="alert">
+                {problem}
+              </span>
+            )}
           </label>
         </div>
         <div className="dialog-actions">
@@ -127,7 +143,7 @@ function IdentityForm({
               </button>
             </>
           )}
-          <button type="submit" className="btn small primary" disabled={busy || !changed}>
+          <button type="submit" className="btn small primary" disabled={busy || !changed || email.trim() === ""}>
             {identity ? t("Save") : t("Add")}
           </button>
         </div>
