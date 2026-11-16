@@ -42,6 +42,7 @@ import { type Theme, applyTheme, savedTheme } from "./theme";
 import { AboutUpdates } from "./UpdateCheck";
 import { LicencesPage } from "./LicencesPage";
 import { EraseEverything } from "./EraseEverything";
+import { TimeInput } from "./TimePicker";
 
 /** Where the project lives, for help and reports. */
 const PROJECT_URL = "https://github.com/lucienPochon/regards";
@@ -791,13 +792,12 @@ function PresetsPage({ picker, onBack }: { picker: Picker; onBack: () => void })
               <span>{def.when}</span>
             </span>
             {def.time && (
-              <input
-                type="time"
-                className="settings-select preset-time"
-                aria-label={t("Time for {choice}", { choice: def.label })}
+              <TimeInput
+                className="preset-time"
+                label={t("Time for {choice}", { choice: def.label })}
                 value={current[def.id]?.time ?? def.time}
                 disabled={!on}
-                onChange={(event) => event.target.value && change(def.id, { time: event.target.value })}
+                onChange={(time) => change(def.id, { time })}
               />
             )}
             <Toggle label={`Offer ${def.label}`} on={on} onChange={(value) => change(def.id, { on: value })} />
