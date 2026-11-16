@@ -5986,6 +5986,123 @@ button.sender-row:hover:not(:disabled) {
   margin-top: 14px;
 }
 
+/* A time of day: hours and minutes in one box. */
+.time-input {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 1px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-input:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.time-input input {
+  width: 22px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  text-align: center;
+}
+
+/* Choosing a date and time: a month, the week from its first day, the time under it. */
+.time-picker {
+  width: min(348px, 100%);
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 14px;
+}
+
+.calendar-head strong {
+  flex: 1;
+  font-weight: 600;
+}
+
+.calendar-head strong::first-letter {
+  text-transform: uppercase;
+}
+
+.calendar-head .icon-btn:disabled {
+  opacity: 0.35;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-weekday {
+  display: grid;
+  place-items: center;
+  height: 24px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.calendar-day {
+  height: 34px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.calendar-day:hover:not(:disabled):not(.picked) {
+  background: var(--pill);
+}
+
+.calendar-day:disabled {
+  color: var(--muted);
+  opacity: 0.45;
+}
+
+/* Today: a thin ring. The day chosen: filled. */
+.calendar-day.today {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.calendar-day.picked {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.calendar-time {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.calendar-chosen {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.calendar-chosen::first-letter {
+  text-transform: uppercase;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -8359,11 +8476,7 @@ button.sender-row:hover:not(:disabled) {
   gap: 12px;
 }
 
-.preset-time {
-  width: 110px;
-}
-
-.preset-time:disabled {
+.preset-time[aria-disabled="true"] {
   opacity: 0.5;
 }
 
