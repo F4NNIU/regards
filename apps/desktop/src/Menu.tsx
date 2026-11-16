@@ -22,6 +22,8 @@ export interface MenuItem {
   checked?: boolean;
   /** One choice among the entries (a dropdown's list): the chosen one carries a check, and focus starts on it. */
   selected?: boolean;
+  /** A typeface to show the label in (a list of fonts). */
+  font?: string;
   onSelect: () => void;
 }
 
@@ -257,7 +259,9 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
                 onClick={() => pick(entry)}
               >
                 {entry.icon && <Icon name={entry.icon} size={16} />}
-                <span className="menu-label">{entry.label}</span>
+                <span className="menu-label" style={entry.font ? { fontFamily: entry.font } : undefined}>
+                  {entry.label}
+                </span>
                 {entry.detail && <span className="menu-detail">{entry.detail}</span>}
                 {entry.hint && <kbd className="menu-hint">{entry.hint}</kbd>}
                 {entry.checked !== undefined && <span className={entry.checked ? "toggle on" : "toggle"} aria-hidden="true" />}

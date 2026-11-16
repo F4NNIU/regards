@@ -74,17 +74,27 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (on: bo
 /** A list this long gets a field to find an entry by typing. */
 const FILTER_FROM = 9;
 
-/** One of several choices, in a dropdown: a button that opens the app's own menu, with a check on the choice made. */
+/**
+ * One of several choices, in a dropdown: a button that opens the app's own menu, with a check on the choice made.
+ * `className` gives the button its look where it is not a Settings row (a toolbar, a card, a form).
+ */
 export function Select<T extends string | number>({
   value,
   options,
   onChange,
   label,
+  className = "settings-select",
+  disabled,
+  title,
 }: {
   value: T;
-  options: { id: T; label: string }[];
+  /** `font`: a typeface to show the entry in (the composer's fonts). */
+  options: { id: T; label: string; font?: string }[];
   onChange: (value: T) => void;
   label: string;
+  className?: string;
+  disabled?: boolean;
+  title?: string;
 }) {
   const [menu, setMenu] = useState<MenuRequest | null>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -96,7 +106,12 @@ export function Select<T extends string | number>({
       label,
       minWidth: element.offsetWidth,
       filter: options.length >= FILTER_FROM ? t("Find in the list") : undefined,
-      entries: options.map((option) => ({ label: option.label, selected: option.id === value, onSelect: () => onChange(option.id) })),
+      entries: options.map((option) => ({
+        label: option.label,
+        font: option.font,
+        selected: option.id === value,
+        onSelect: () => onChange(option.id),
+      })),
     });
   };
   return (
@@ -104,7 +119,9 @@ export function Select<T extends string | number>({
       <button
         ref={button}
         type="button"
-        className="settings-select select-button"
+        className={`${className} select-button`}
+        title={title}
+        disabled={disabled}
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={menu !== null}
@@ -118,7 +135,7 @@ export function Select<T extends string | number>({
         }}
       >
         <span className="select-value">{options.find((option) => option.id === value)?.label}</span>
-        <Icon name="chevronDown" size={16} />
+        <Icon name="chevronDown" size={14} />
       </button>
       {/* Outside whatever holds the button: a label around it would take a click beside the list as a click on the button. */}
       {menu &&

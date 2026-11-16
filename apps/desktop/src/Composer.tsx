@@ -49,6 +49,7 @@ import { type Anchor, anchorOf, Menu, type MenuEntry, type MenuRequest } from ".
 import { getPrefs } from "./prefs";
 import { type CommandId, commandOf, useShortcuts, withKey } from "./shortcuts";
 import { t } from "./i18n";
+import { Select } from "./SettingsControls";
 
 // The editor (Tiptap and ProseMirror) loads when a message is first written.
 const RichEditor = lazy(() => import("./RichEditor").then((module) => ({ default: module.RichEditor })));
@@ -703,21 +704,15 @@ export function Composer({
       </button>
       <span className="sep" />
       {signatures.length > 0 && (
-        <select
+        <Select
           className="composer-from"
-          aria-label={t("Signature")}
+          label={t("Signature")}
           title={t("Signature")}
           value={signatureId ?? ""}
-          onChange={(event) => void changeSignature(event.target.value)}
+          options={[{ id: "", label: t("No signature") }, ...signatures.map((signature) => ({ id: signature.id, label: signature.name }))]}
+          onChange={(id) => void changeSignature(String(id))}
           disabled={locked}
-        >
-          <option value="">{t("No signature")}</option>
-          {signatures.map((signature) => (
-            <option key={signature.id} value={signature.id}>
-              {signature.name}
-            </option>
-          ))}
-        </select>
+        />
       )}
       {draft && (
         <button
