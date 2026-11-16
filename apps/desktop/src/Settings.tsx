@@ -460,6 +460,8 @@ function AccountRow({
   const [error, setError] = useState<string | null>(null);
   const [addresses, setAddresses] = useState(false);
   const [options, setOptions] = useState(false);
+  // Addresses, Details and Remove live in the ⋯ menu at the row's end.
+  const [menu, setMenu] = useState<MenuRequest | null>(null);
   // "Change password…" from the row: Details open on the password.
   const [password, setPassword] = useState(0);
   const prefs = usePrefs();
@@ -481,7 +483,7 @@ function AccountRow({
   };
   const remove = async () => {
     const ok = await confirm({
-      title: `Remove ${account.email}?`,
+      title: t("Remove {account}?", { account: account.email }),
       body: t("Its mail, drafts and unsent messages are removed from this computer, and its saved password is deleted. Nothing changes on the server."),
       confirm: t("Remove account"),
       danger: true,
@@ -497,40 +499,50 @@ function AccountRow({
   const problem = error ?? oauth.error ?? entry.error ?? sync?.last_error ?? null;
   // The push connection keeps failing: new mail arrives only when synced, until it works again.
   const pushStopped = !problem && !sync?.push_active && sync?.push_error ? sync.push_error : null;
+  const busy = syncing || Boolean(sync?.running);
+  // Live: a green dot and one word; the sentence is its tooltip.
+  const live = !account.needs_sign_in && !busy && !problem && !pushStopped && Boolean(sync?.push_active);
   const status = account.needs_sign_in
     ? t("Signed out: sign in again to sync and send")
-    : syncing || sync?.running
+    : busy
       ? t("Syncing…")
       : problem
         ? t("Sync failed: {problem}", { problem })
         : pushStopped
           ? t("Live updates stopped: {problem}. Trying again…", { problem: pushStopped })
           : sync?.push_active
-            ? t("Live: new mail arrives as it comes in")
+            ? t("Live")
             : sync?.last_success_at
               ? t("Synced at {time}", { time: new Date(sync.last_success_at).toLocaleTimeString(appLocale()) })
               : t("Not synced yet");
+  const name = account.display_name || account.email;
 
   return (
     <>
-    <li className="account-row">
+    <li className="account-row account-card">
       <Avatar person={{ name: account.display_name, address: account.email }} size="lg" ring />
       <div className="account-text">
-        <strong>{account.display_name || account.email}</strong>
+        <strong>{name}</strong>
         <span className="muted">{account.email}</span>
         {provider && <span className="small muted">{t("Signs in with")} {PROVIDERS[provider].label}</span>}
-        <span className={problem || pushStopped || account.needs_sign_in ? "small error" : "small muted"}>{status}</span>
+        <span
+          className={problem || pushStopped || account.needs_sign_in ? "small error" : live ? "small muted account-live" : "small muted"}
+          title={live ? t("Live: new mail arrives as it comes in") : undefined}
+        >
+          {status}
+        </span>
       </div>
-      <div className="account-buttons">
+      {/* Only what needs you shows as a button; the rest is in the ⋯ menu. */}
+      <div className="account-actions">
         {account.needs_sign_in && provider && (
-          <button type="button" className="btn small primary" onClick={() => void oauth.start(provider, account.email)} disabled={oauth.flow !== null}>
+          <button type="button" className="btn small soft" onClick={() => void oauth.start(provider, account.email)} disabled={oauth.flow !== null}>
             {t("Sign in again")}
           </button>
         )}
         {!provider && problem && (
           <button
             type="button"
-            className="btn small"
+            className="btn small soft"
             onClick={() => {
               setOptions(true);
               setPassword((now) => now + 1);
@@ -539,20 +551,42 @@ function AccountRow({
             {t("Change password…")}
           </button>
         )}
-        <button type="button" className="btn small" onClick={syncNow} disabled={syncing || sync?.running}>
-          <Icon name="refresh" size={15} />
-          {t("Sync now")}
-        </button>
-        <button type="button" className="btn small" aria-expanded={addresses} onClick={() => setAddresses(!addresses)}>
-          {t("Addresses")}
-        </button>
-        <button type="button" className="btn small" aria-expanded={options} onClick={() => setOptions(!options)}>
-          {t("Details")}
-        </button>
-        <button type="button" className="btn small danger" onClick={remove}>
-          {t("Remove")}
+        {!account.needs_sign_in && (
+          <button
+            type="button"
+            className={busy ? "icon-btn small spinning" : "icon-btn small"}
+            title={t("Sync now")}
+            aria-label={t("Sync now")}
+            onClick={syncNow}
+            disabled={busy}
+          >
+            <Icon name="refresh" size={16} />
+          </button>
+        )}
+        <button
+          type="button"
+          className="icon-btn small account-more"
+          title={t("More")}
+          aria-label={t("More actions for {account}", { account: name })}
+          aria-haspopup="menu"
+          aria-expanded={menu !== null}
+          onClick={(event) =>
+            setMenu({
+              anchor: anchorOf(event.currentTarget, "end"),
+              label: t("More actions for {account}", { account: name }),
+              entries: [
+                { label: addresses ? t("Hide addresses") : t("Addresses"), icon: "people", onSelect: () => setAddresses(!addresses) },
+                { label: options ? t("Hide details") : t("Details"), icon: "settings", onSelect: () => setOptions(!options) },
+                "separator",
+                { label: t("Remove this account…"), icon: "trash", danger: true, onSelect: () => void remove() },
+              ],
+            })
+          }
+        >
+          <Icon name="more" size={17} />
         </button>
       </div>
+      {menu && <Menu request={menu} onClose={() => setMenu(null)} />}
     </li>
     {oauth.flow && (
       <li>
