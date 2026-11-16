@@ -11,6 +11,15 @@ import { useShortcuts } from "./shortcuts";
 import { type Explanation, type Policy, SECTION_LABELS, blockSender, blockableDomain, explain, reasonText, setSender, setSenderQuiet } from "./smart";
 import { useDialogFocus } from "./dialogFocus";
 import { t, tn } from "./i18n";
+import { Select } from "./SettingsControls";
+
+/** Where a sender's mail goes: sorted by Regards, or always one section. */
+const sections = (): { id: string; label: string }[] => [
+  { id: "auto", label: t("Sorted automatically") },
+  { id: "people", label: t("Always People") },
+  { id: "notifications", label: t("Always Notifications") },
+  { id: "newsletters", label: t("Always Newsletters") },
+];
 
 export interface SenderRequest {
   anchor: Anchor;
@@ -181,21 +190,14 @@ export function SenderCard({
           <label className="sender-row">
             <Icon name="inbox" size={16} />
             <span>{t("Section")}</span>
-            <select
+            <Select
               className="sender-section"
-              aria-label={t("Where their mail goes")}
+              label={t("Where their mail goes")}
               value={sender?.policy ?? "auto"}
               disabled={!sender}
-              onChange={(event) => {
-                const value = event.target.value;
-                choose(value === "auto" ? null : (value as Policy), sender?.priority ?? false);
-              }}
-            >
-              <option value="auto">{t("Sorted automatically")}</option>
-              <option value="people">{t("Always People")}</option>
-              <option value="notifications">{t("Always Notifications")}</option>
-              <option value="newsletters">{t("Always Newsletters")}</option>
-            </select>
+              options={sections()}
+              onChange={(value) => choose(value === "auto" ? null : (value as Policy), sender?.priority ?? false)}
+            />
           </label>
           <button
             type="button"
@@ -239,19 +241,14 @@ export function SenderCard({
               <label className="sender-row">
                 <Icon name="people" size={16} />
                 <span>{t("Section")}</span>
-                <select
+                <Select
                   className="sender-section"
-                  aria-label={t("Where mail from everyone at {domain} goes", { domain: company.slice(1) })}
+                  label={t("Where mail from everyone at {domain} goes", { domain: company.slice(1) })}
                   value={domainChoice}
                   disabled={!explanation}
-                  onChange={(event) => chooseForDomain(event.target.value)}
-                >
-                  <option value="auto">{t("Sorted automatically")}</option>
-                  <option value="priority">{t("Priority")}</option>
-                  <option value="people">{t("Always People")}</option>
-                  <option value="notifications">{t("Always Notifications")}</option>
-                  <option value="newsletters">{t("Always Newsletters")}</option>
-                </select>
+                  options={[sections()[0], { id: "priority", label: t("Priority") }, ...sections().slice(1)]}
+                  onChange={chooseForDomain}
+                />
               </label>
               {onGroup && groupRow(searchTerm("from", company), company.slice(1), t("Group everyone at {domain}", { domain: company.slice(1) }))}
             </>

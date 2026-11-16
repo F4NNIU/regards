@@ -4017,7 +4017,7 @@ button.list-title:hover {
 }
 
 /* The signature's list: flat like the From button beside it, as wide as its choice. */
-select.composer-from {
+.composer-from {
   height: 30px;
   border: 0;
   border-radius: 7px;
@@ -4025,7 +4025,7 @@ select.composer-from {
   field-sizing: content;
 }
 
-select.composer-from:hover:not(:disabled) {
+.composer-from:hover:not(:disabled) {
   background: var(--hover);
 }
 
@@ -4379,7 +4379,7 @@ select.composer-from:hover:not(:disabled) {
 }
 
 /* An icon button: square, the icon in the middle. */
-.format-bar button:has(> .icon) {
+.format-bar button:has(> .icon):not(.select-button) {
   display: inline-grid;
   place-items: center;
   padding: 0 6px;
@@ -8118,8 +8118,13 @@ button.sender-row:hover:not(:disabled) {
 }
 
 .select-button > .icon {
+  flex: none;
   margin-left: auto;
   color: var(--muted);
+}
+
+.select-button:disabled {
+  opacity: 0.5;
 }
 
 .select-value {

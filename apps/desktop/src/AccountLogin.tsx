@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { type AccountSummary, type ConnectionSecurity, type LoginInput, type ServerSettings, setLogin } from "./accounts";
 import { t } from "./i18n";
+import { Select } from "./SettingsControls";
 
 const SECURITY: Record<ConnectionSecurity, string> = { tls: "TLS", starttls: "STARTTLS" };
 
@@ -172,17 +173,18 @@ function LoginForm({
             </label>
             <label className="security">
               {t("Security")}
-              <select
+              <Select
                 className="input"
+                label={t("Security")}
                 value={input.smtpSecurity}
-                onChange={(event) => {
-                  const security = event.target.value as ConnectionSecurity;
-                  setInput((now) => ({ ...now, smtpSecurity: security, smtpPort: security === "tls" ? 465 : 587 }));
-                }}
-              >
-                <option value="starttls">{t("STARTTLS")}</option>
-                <option value="tls">{t("TLS")}</option>
-              </select>
+                options={[
+                  { id: "starttls", label: t("STARTTLS") },
+                  { id: "tls", label: t("TLS") },
+                ]}
+                onChange={(security: ConnectionSecurity) =>
+                  setInput((now) => ({ ...now, smtpSecurity: security, smtpPort: security === "tls" ? 465 : 587 }))
+                }
+              />
             </label>
           </fieldset>
           <label>

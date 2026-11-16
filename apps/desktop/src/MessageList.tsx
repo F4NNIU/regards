@@ -22,6 +22,7 @@ import { SEARCH_CHIPS, hasTerm, toggleTerm } from "./search";
 import { useShortcuts, withKey } from "./shortcuts";
 import { DRAG_TYPE, type DragPayload } from "./Sidebar";
 import { t, tn } from "./i18n";
+import { Select } from "./SettingsControls";
 
 /** "Someday" in the daemon: no time to come back (regards_store::marks::SOMEDAY). */
 const SOMEDAY = 32_503_680_000_000;
@@ -1057,19 +1058,13 @@ function SearchBar({
           }}
         />
         {scope && (
-          <select
+          <Select
             className="search-scope"
-            aria-label={t("Which accounts to search")}
+            label={t("Which accounts to search")}
             value={scope.accountId ?? ""}
-            onChange={(event) => scope.onScope(event.target.value || null)}
-          >
-            <option value="">{t("All accounts")}</option>
-            {scope.accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.label}
-              </option>
-            ))}
-          </select>
+            options={[{ id: "", label: t("All accounts") }, ...scope.accounts.map((account) => ({ id: account.id, label: account.label }))]}
+            onChange={(id) => scope.onScope(id || null)}
+          />
         )}
         <button
           type="button"

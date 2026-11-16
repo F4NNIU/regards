@@ -5,6 +5,7 @@ import { fullDate } from "./format";
 import { Icon } from "./icons";
 import { radioKeys, radioTab } from "./radios";
 import { t, tn } from "./i18n";
+import { Select } from "./SettingsControls";
 
 /** How often the list looks for new entries while it is shown (recording wakes no client). */
 const POLL_MS = 5000;
@@ -274,19 +275,13 @@ export function AgentActivity({
           ))}
         </span>
         {accounts.length > 1 && (
-          <select
+          <Select
             className="agent-level"
-            aria-label={t("Which account")}
+            label={t("Which account")}
             value={accountId ?? ""}
-            onChange={(event) => setAccountId(event.target.value || null)}
-          >
-            <option value="">{t("All accounts")}</option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.email}
-              </option>
-            ))}
-          </select>
+            options={[{ id: "", label: t("All accounts") }, ...accounts.map((account) => ({ id: account.id, label: account.email }))]}
+            onChange={(id) => setAccountId(id || null)}
+          />
         )}
       </div>
       {error && <p className="error" role="alert">{error}</p>}

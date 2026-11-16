@@ -12,6 +12,7 @@ import { commandOf } from "./shortcuts";
 import "prosemirror-view/style/prosemirror.css";
 import "prosemirror-gapcursor/style/gapcursor.css";
 import { t } from "./i18n";
+import { Select } from "./SettingsControls";
 
 /** An image in the text, shown from its bytes, marked with its Content-ID (images.ts). */
 const InlineImage = Image.extend({
@@ -112,9 +113,10 @@ const Indent = Extension.create({
 
 /** Fonts and sizes offered, as the daemon lets them through (`sanitize_outgoing`); none is the reader's own. */
 const FONTS = [
-  { value: "sans", label: t("Sans serif") },
-  { value: "serif", label: t("Serif") },
-  { value: "mono", label: t("Fixed width") },
+  // The families are the ones styles.css gives each font in the message (`[data-font]`).
+  { value: "sans", label: t("Sans serif"), family: "Arial, Helvetica, sans-serif" },
+  { value: "serif", label: t("Serif"), family: 'Georgia, "Times New Roman", serif' },
+  { value: "mono", label: t("Fixed width"), family: '"Courier New", Courier, monospace' },
 ];
 const SIZES = [
   { value: "small", label: t("Small") },
@@ -264,53 +266,41 @@ export function RichEditor({
   return (
     <div className="rich-editor">
       <div className="format-bar small" role="toolbar" aria-label={t("Formatting")}>
-        <select
+        <Select
           className="text-style"
-          aria-label={t("Text style")}
+          label={t("Text style")}
           title={t("Text style")}
           disabled={disabled}
           value={active?.heading ?? 0}
-          onChange={(event) => {
-            const level = Number(event.target.value);
+          options={[
+            { id: 0, label: t("Text") },
+            { id: 1, label: t("Title") },
+            { id: 2, label: t("Heading") },
+            { id: 3, label: t("Subheading") },
+          ]}
+          onChange={(level) => {
             if (level === 1 || level === 2 || level === 3) chain().setHeading({ level }).run();
             else chain().setParagraph().run();
           }}
-        >
-          <option value={0}>{t("Text")}</option>
-          <option value={1}>{t("Title")}</option>
-          <option value={2}>{t("Heading")}</option>
-          <option value={3}>{t("Subheading")}</option>
-        </select>
-        <select
+        />
+        <Select
           className="text-font"
-          aria-label={t("Font")}
+          label={t("Font")}
           title={t("Font")}
           disabled={disabled}
           value={active?.font ?? ""}
-          onChange={(event) => chain().setMark("textStyle", { font: event.target.value || null }).removeEmptyTextStyle().run()}
-        >
-          <option value="">{t("Font")}</option>
-          {FONTS.map((font) => (
-            <option key={font.value} value={font.value}>
-              {font.label}
-            </option>
-          ))}
-        </select>
-        <select
+          options={[{ id: "", label: t("Font") }, ...FONTS.map((font) => ({ id: font.value, label: font.label, font: font.family }))]}
+          onChange={(font) => chain().setMark("textStyle", { font: font || null }).removeEmptyTextStyle().run()}
+        />
+        <Select
           className="text-size"
-          aria-label={t("Text size")}
+          label={t("Text size")}
           title={t("Text size")}
           disabled={disabled}
           value={active?.size ?? ""}
-          onChange={(event) => chain().setMark("textStyle", { size: event.target.value || null }).removeEmptyTextStyle().run()}
-        >
-          <option value="">{t("Normal")}</option>
-          {SIZES.map((size) => (
-            <option key={size.value} value={size.value}>
-              {size.label}
-            </option>
-          ))}
-        </select>
+          options={[{ id: "", label: t("Normal") }, ...SIZES.map((size) => ({ id: size.value, label: size.label }))]}
+          onChange={(size) => chain().setMark("textStyle", { size: size || null }).removeEmptyTextStyle().run()}
+        />
         <span className="format-sep" />
         {button("B", active?.bold ?? false, () => chain().toggleBold().run(), t("Bold"))}
         {button("I", active?.italic ?? false, () => chain().toggleItalic().run(), t("Italic"))}

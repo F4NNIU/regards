@@ -321,35 +321,29 @@ function AgentsTab({
                   {level === "send" && (
                     <label className="agent-send">
                       {t("Sends")}
-                      <select
+                      <Select
                         className="agent-level"
+                        label={t("Sends")}
                         value={window ?? ""}
-                        onChange={(event) =>
-                          void chooseWindow(account, event.target.value === "" ? null : Number(event.target.value))
-                        }
-                      >
-                        <option value="">{t("Ask me each time")}</option>
-                        {SEND_WINDOWS.map((seconds) => (
-                          <option key={seconds} value={seconds}>
-                            {t("Send after {time} unless I call it back", { time: windowLabel(seconds) })}
-                          </option>
-                        ))}
-                      </select>
+                        options={[
+                          { id: "", label: t("Ask me each time") },
+                          ...SEND_WINDOWS.map((seconds) => ({
+                            id: seconds,
+                            label: t("Send after {time} unless I call it back", { time: windowLabel(seconds) }),
+                          })),
+                        ]}
+                        onChange={(seconds) => void chooseWindow(account, seconds === "" ? null : seconds)}
+                      />
                     </label>
                   )}
                 </span>
-                <select
+                <Select
                   className="agent-level"
-                  aria-label={t("What agents may do with {account}", { account: account.email })}
+                  label={t("What agents may do with {account}", { account: account.email })}
                   value={level}
-                  onChange={(event) => void choose(account, event.target.value as AgentAccess)}
-                >
-                  {AGENT_ACCESS_LEVELS.map((entry) => (
-                    <option key={entry.value} value={entry.value}>
-                      {entry.label}
-                    </option>
-                  ))}
-                </select>
+                  options={AGENT_ACCESS_LEVELS.map((entry) => ({ id: entry.value, label: entry.label }))}
+                  onChange={(next) => void choose(account, next)}
+                />
               </li>
             );
           })}
