@@ -3,9 +3,8 @@ import { applyUndo } from "./accounts";
 import { type ActivityKind, type AgentActivity as Entry, type AgentDecision, activityKind, listAgentActivity } from "./agents";
 import { fullDate } from "./format";
 import { Icon } from "./icons";
-import { radioKeys, radioTab } from "./radios";
 import { t, tn } from "./i18n";
-import { Select } from "./SettingsControls";
+import { Choice, Select } from "./SettingsControls";
 
 /** How often the list looks for new entries while it is shown (recording wakes no client). */
 const POLL_MS = 5000;
@@ -259,21 +258,7 @@ export function AgentActivity({
     <section className="agent-activity" aria-label={t("Agent activity")}>
       <div className="activity-head">
         <h4>{t("Activity")}</h4>
-        <span className="choice" role="radiogroup" aria-label={t("Which requests")} onKeyDown={(event) => radioKeys(event)}>
-          {FILTERS.map((option, index) => (
-            <button
-              key={option.label}
-              type="button"
-              role="radio"
-              aria-checked={only === option.id}
-              tabIndex={radioTab(only === option.id, index, true)}
-              className={only === option.id ? "chosen" : undefined}
-              onClick={() => setOnly(option.id)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </span>
+        <Choice label={t("Which requests")} value={only} options={FILTERS} onChange={setOnly} />
         {accounts.length > 1 && (
           <Select
             className="agent-level"
