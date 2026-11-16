@@ -31,6 +31,7 @@ import { Icon } from "./icons";
 import { OauthWaiting, PROVIDERS, useOauth } from "./OauthSignIn";
 import { useShortcuts } from "./shortcuts";
 import { t } from "./i18n";
+import { PortInput, SecretInput } from "./Fields";
 
 /** An address worth looking up: something@domain.tld. */
 const COMPLETE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -716,29 +717,10 @@ function useHeld(on: boolean, ms: number): boolean {
 }
 
 function PasswordField({ value, autoFocus, onChange }: { value: string; autoFocus: boolean; onChange: (value: string) => void }) {
-  const [shown, setShown] = useState(false);
   return (
     <label className="signup-field">
       {t("Password")}
-      <span className="signup-secret">
-        <input
-          className="input big"
-          type={shown ? "text" : "password"}
-          value={value}
-          autoFocus={autoFocus}
-          autoComplete="current-password"
-          onChange={(event) => onChange(event.target.value)}
-        />
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label={shown ? t("Hide the password") : t("Show the password")}
-          aria-pressed={shown}
-          onClick={() => setShown(!shown)}
-        >
-          <Icon name={shown ? "eyeOff" : "eye"} size={17} />
-        </button>
-      </span>
+      <SecretInput className="input big" value={value} autoFocus={autoFocus} autoComplete="current-password" onChange={onChange} />
     </label>
   );
 }
@@ -881,12 +863,7 @@ function ServersForm({
           </label>
           <label className="signup-field port">
             {t("Port")}
-            <input
-              className="input"
-              inputMode="numeric"
-              value={input.imapPort}
-              onChange={(event) => field("imapPort", Number(event.target.value) || 0)}
-            />
+            <PortInput value={input.imapPort} onChange={(port) => field("imapPort", port)} />
           </label>
         </div>
         <CheckLine server="imap" settings={settings.imap} found={imap.found} />
@@ -909,12 +886,7 @@ function ServersForm({
           </label>
           <label className="signup-field port">
             {t("Port")}
-            <input
-              className="input"
-              inputMode="numeric"
-              value={input.smtpPort}
-              onChange={(event) => field("smtpPort", Number(event.target.value) || 0)}
-            />
+            <PortInput value={input.smtpPort} onChange={(port) => field("smtpPort", port)} />
           </label>
         </div>
         <div className="signup-segmented" role="radiogroup" aria-label={t("Encryption for sending")}>

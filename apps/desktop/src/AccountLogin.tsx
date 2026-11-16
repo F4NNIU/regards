@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { type AccountSummary, type ConnectionSecurity, type LoginInput, type ServerSettings, setLogin } from "./accounts";
 import { t } from "./i18n";
 import { Select } from "./SettingsControls";
+import { PortInput, SecretInput, portOk } from "./Fields";
 
 const SECURITY: Record<ConnectionSecurity, string> = { tls: "TLS", starttls: "STARTTLS" };
 
@@ -101,17 +102,15 @@ function LoginForm({
       setChecking(false);
     }
   };
-  const ready = servers ? input.imapHost.trim() !== "" : (input.password ?? "") !== "";
+  const ready = servers ? input.imapHost.trim() !== "" && portOk(input.imapPort) && portOk(input.smtpPort) : (input.password ?? "") !== "";
 
   return (
     <form className="account-form login-form" onSubmit={submit}>
       <label>
         {servers ? t("Password, if it changed") : t("New password")}
-        <input
-          className="input"
-          type="password"
+        <SecretInput
           value={input.password ?? ""}
-          onChange={(event) => set("password", event.target.value === "" ? null : event.target.value)}
+          onChange={(password) => set("password", password === "" ? null : password)}
           placeholder={servers ? t("Leave empty to keep the saved one") : t("The password for {account}", { account: account.email })}
           autoComplete="current-password"
           autoFocus={!servers}
@@ -137,14 +136,7 @@ function LoginForm({
             </label>
             <label className="port">
               {t("Port")}
-              <input
-                className="input"
-                type="number"
-                min={1}
-                max={65535}
-                value={input.imapPort}
-                onChange={(event) => set("imapPort", Number(event.target.value))}
-              />
+              <PortInput value={input.imapPort} onChange={(port) => set("imapPort", port)} />
             </label>
           </fieldset>
           <fieldset>
@@ -162,14 +154,7 @@ function LoginForm({
             </label>
             <label className="port">
               {t("Port")}
-              <input
-                className="input"
-                type="number"
-                min={1}
-                max={65535}
-                value={input.smtpPort}
-                onChange={(event) => set("smtpPort", Number(event.target.value))}
-              />
+              <PortInput value={input.smtpPort} onChange={(port) => set("smtpPort", port)} />
             </label>
             <label className="security">
               {t("Security")}

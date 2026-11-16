@@ -1060,6 +1060,21 @@ button.danger {
   border-color: transparent;
 }
 
+/* A field whose value is wrong says so itself: red, with the reason under it. */
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.input[aria-invalid="true"]:focus-visible {
+  outline-color: var(--danger);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
 button.link {
   padding: 3px 8px;
   border-radius: 6px;
@@ -7617,17 +7632,18 @@ button.sender-row:hover:not(:disabled) {
 }
 
 /* The password, with a button to show it. */
-.signup-secret {
+/* A password or a key, with the eye that shows it at the field's end. */
+.secret-field {
   display: flex;
   align-items: center;
   position: relative;
 }
 
-.signup-secret .input {
+.secret-field .input {
   padding-right: 46px;
 }
 
-.signup-secret .icon-btn {
+.secret-field .icon-btn {
   position: absolute;
   right: 5px;
 }

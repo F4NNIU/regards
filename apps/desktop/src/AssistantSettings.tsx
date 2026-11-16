@@ -15,6 +15,7 @@ import { assistantChanged } from "./AssistantDialog";
 import { Icon } from "./icons";
 import { Option, Select } from "./SettingsControls";
 import { t, tn } from "./i18n";
+import { SecretInput } from "./Fields";
 
 /**
  * What the person picks. "local" is a model server found on this computer:
@@ -154,13 +155,12 @@ export function AssistantPage() {
   const keyField = (
     <label>
       {anthropic ? t("API key") : t("API key (if the server needs one)")}
-      <input
-        className="input"
-        type="password"
+      <SecretInput
+        what="key"
         autoComplete="off"
         value={key}
         placeholder={keptKey ? t("Kept in this computer's credential store; type to replace it") : anthropic ? "sk-ant-…" : ""}
-        onChange={(event) => setKey(event.target.value)}
+        onChange={setKey}
       />
       <span className="muted small">
         {anthropic
