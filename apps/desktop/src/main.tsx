@@ -9,8 +9,10 @@ import { threadWindowMessage } from "./thread-window";
 import { applyTheme, savedTheme } from "./theme";
 import "./styles.css";
 import { spoken } from "./i18n";
+import { installTooltips } from "./tooltips";
 
 applyTheme(savedTheme());
+installTooltips();
 
 // Screen readers and spelling follow the app's language.
 document.documentElement.lang = spoken();
