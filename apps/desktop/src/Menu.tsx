@@ -20,6 +20,8 @@ export interface MenuItem {
   quick?: boolean;
   /** A switch, on or off: picking it flips it (`onSelect`) and the menu stays open. */
   checked?: boolean;
+  /** One choice among the entries (a dropdown's list): the chosen one carries a check, and focus starts on it. */
+  selected?: boolean;
   onSelect: () => void;
 }
 
@@ -37,6 +39,8 @@ export interface MenuRequest {
   /** Entries made from what is typed in the filter field (a time, say), shown first. */
   typed?: (query: string) => MenuItem[];
   label: string;
+  /** At least this wide: a dropdown's list is never narrower than its button. */
+  minWidth?: number;
   /**
    * "palette": a wide panel in the upper middle of the window with a title,
    * used for the command palette and the time pickers. Otherwise a pop-up at the anchor.
@@ -67,7 +71,16 @@ const MARGIN = 8;
  */
 export function Menu({ request, onClose }: { request: MenuRequest; onClose: () => void }) {
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState(0);
+  // With a filter field, the highlight starts on the chosen entry of a dropdown's list.
+  const [active, setActive] = useState(() =>
+    Math.max(
+      0,
+      request.entries
+        .filter((entry): entry is MenuItem => entry !== "separator" && !entry.disabled)
+        .findIndex((entry) => entry.selected),
+    ),
+  );
+  const typed = useRef({ text: "", at: 0 });
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const menu = useRef<HTMLDivElement>(null);
   const listId = useId();
@@ -75,6 +88,8 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
   // With a filter field it is a combobox over a list (focus stays in the field, the keys move a
   // highlight); without one, a menu whose items take focus in turn.
   const searchable = Boolean(request.filter);
+  // A dropdown's list: one entry of several is the chosen one.
+  const choice = request.entries.some((entry) => entry !== "separator" && entry.selected !== undefined);
   const dismiss = () => {
     request.onDismiss?.();
     onClose();
@@ -123,7 +138,8 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
     if (!position) return;
     const first = request.filter
       ? menu.current?.querySelector<HTMLElement>("input")
-      : menu.current?.querySelector<HTMLElement>(".menu-item:not(:disabled)");
+      : (menu.current?.querySelector<HTMLElement>(".menu-item[aria-selected='true']:not(:disabled)") ??
+        menu.current?.querySelector<HTMLElement>(".menu-item:not(:disabled)"));
     first?.focus();
   }, [position, request.filter]);
 
@@ -150,6 +166,17 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
       const step = event.key === "ArrowDown" ? 1 : -1;
       const next = at === -1 ? (step > 0 ? 0 : buttons.length - 1) : (at + step + buttons.length) % buttons.length;
       buttons[next]?.focus();
+    } else if ((event.key === "Home" || event.key === "End") && !inField) {
+      event.preventDefault();
+      const buttons = Array.from(menu.current?.querySelectorAll<HTMLElement>(".menu-item:not(:disabled)") ?? []);
+      buttons[event.key === "Home" ? 0 : buttons.length - 1]?.focus();
+    } else if (!inField && event.key.length === 1 && event.key !== " " && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      // A letter goes to the next entry that starts with what was typed just now.
+      const now = Date.now();
+      typed.current = { text: now - typed.current.at > 600 ? event.key : typed.current.text + event.key, at: now };
+      const start = typed.current.text.toLowerCase();
+      const buttons = Array.from(menu.current?.querySelectorAll<HTMLElement>(".menu-item:not(:disabled)") ?? []);
+      buttons.find((button) => button.querySelector(".menu-label")?.textContent?.toLowerCase().startsWith(start))?.focus();
     } else if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -171,9 +198,9 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
       <div
         ref={menu}
         className={["menu", palette ? "palette" : "", position ? "" : "measuring"].join(" ")}
-        role={searchable ? "dialog" : "menu"}
+        role={searchable ? "dialog" : choice ? "listbox" : "menu"}
         aria-label={request.label}
-        style={position ?? undefined}
+        style={{ ...position, minWidth: request.minWidth }}
         onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={keys}
       >
@@ -208,10 +235,10 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
               <button
                 key={`${entry.label}-${index}`}
                 type="button"
-                role={searchable ? "option" : entry.checked === undefined ? "menuitem" : "menuitemcheckbox"}
+                role={searchable || choice ? "option" : entry.checked === undefined ? "menuitem" : "menuitemcheckbox"}
                 aria-checked={entry.checked}
                 id={searchable && items.includes(entry) ? `${listId}-${items.indexOf(entry)}` : undefined}
-                aria-selected={searchable ? entry === highlighted : undefined}
+                aria-selected={choice ? Boolean(entry.selected) : searchable ? entry === highlighted : undefined}
                 tabIndex={searchable ? -1 : undefined}
                 className={[
                   "menu-item",
@@ -220,9 +247,12 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
                   entry.depth ? `depth-${Math.min(entry.depth, 4)}` : "",
                 ].join(" ")}
                 disabled={entry.disabled}
-                onMouseEnter={() => {
+                onMouseMove={(event) => {
+                  // The pointer and the keys share one highlight: the last to move has it.
                   const at = items.indexOf(entry);
-                  if (at !== -1) setActive(at);
+                  if (searchable) {
+                    if (at !== -1 && at !== active) setActive(at);
+                  } else if (document.activeElement !== event.currentTarget) event.currentTarget.focus();
                 }}
                 onClick={() => pick(entry)}
               >
@@ -231,6 +261,7 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
                 {entry.detail && <span className="menu-detail">{entry.detail}</span>}
                 {entry.hint && <kbd className="menu-hint">{entry.hint}</kbd>}
                 {entry.checked !== undefined && <span className={entry.checked ? "toggle on" : "toggle"} aria-hidden="true" />}
+                {entry.selected !== undefined && <span className="menu-check">{entry.selected && <Icon name="check" size={16} />}</span>}
                 {entry.keys && (
                   <span className="keycaps">
                     {keyCaps(entry.keys).map((cap, at) => (
