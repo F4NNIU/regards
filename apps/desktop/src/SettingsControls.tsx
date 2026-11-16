@@ -1,5 +1,7 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon, type IconName } from "./icons";
+import { Menu, type MenuRequest, anchorOf } from "./Menu";
 import { radioKeys, radioTab } from "./radios";
 import { t } from "./i18n";
 
@@ -69,7 +71,10 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (on: bo
   );
 }
 
-/** One of several choices, in a dropdown. */
+/** A list this long gets a field to find an entry by typing. */
+const FILTER_FROM = 9;
+
+/** One of several choices, in a dropdown: a button that opens the app's own menu, with a check on the choice made. */
 export function Select<T extends string | number>({
   value,
   options,
@@ -81,22 +86,53 @@ export function Select<T extends string | number>({
   onChange: (value: T) => void;
   label: string;
 }) {
+  const [menu, setMenu] = useState<MenuRequest | null>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const open = () => {
+    const element = button.current;
+    if (!element) return;
+    setMenu({
+      anchor: anchorOf(element),
+      label,
+      minWidth: element.offsetWidth,
+      filter: options.length >= FILTER_FROM ? t("Find in the list") : undefined,
+      entries: options.map((option) => ({ label: option.label, selected: option.id === value, onSelect: () => onChange(option.id) })),
+    });
+  };
   return (
-    <select
-      className="settings-select"
-      aria-label={label}
-      value={String(value)}
-      onChange={(event) => {
-        const chosen = options.find((option) => String(option.id) === event.target.value);
-        if (chosen) onChange(chosen.id);
-      }}
-    >
-      {options.map((option) => (
-        <option key={String(option.id)} value={String(option.id)}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+    <>
+      <button
+        ref={button}
+        type="button"
+        className="settings-select select-button"
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={menu !== null}
+        aria-label={label}
+        onClick={open}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            open();
+          }
+        }}
+      >
+        <span className="select-value">{options.find((option) => option.id === value)?.label}</span>
+        <Icon name="chevronDown" size={16} />
+      </button>
+      {/* Outside whatever holds the button: a label around it would take a click beside the list as a click on the button. */}
+      {menu &&
+        createPortal(
+          <Menu
+            request={menu}
+            onClose={() => {
+              setMenu(null);
+              button.current?.focus();
+            }}
+          />,
+          document.body,
+        )}
+    </>
   );
 }
 

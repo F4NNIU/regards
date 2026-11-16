@@ -347,6 +347,7 @@ export const FR: Record<string, Entry> = {
   "Nothing here": "Rien ici",
   "Nothing in {section}": "Rien dans {section}",
   "Nothing matches.": "Aucun résultat.",
+  "Find in the list": "Chercher dans la liste",
   "Nothing more on the server": "Rien de plus sur le serveur",
   "Nothing more on the servers": "Rien de plus sur les serveurs",
   "Nothing pinned": "Rien d’épinglé",

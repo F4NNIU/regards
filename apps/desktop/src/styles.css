@@ -8104,6 +8104,31 @@ button.sender-row:hover:not(:disabled) {
   font-size: 13px;
 }
 
+/* The dropdown's button: what is chosen, and a chevron. */
+.select-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.select-button:hover,
+.select-button[aria-expanded="true"] {
+  background: var(--hover);
+}
+
+.select-button > .icon {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .option.link-row {
   width: 100%;
   color: var(--text);
@@ -8515,18 +8540,22 @@ button.sender-row:hover:not(:disabled) {
   color: var(--muted);
 }
 
-.menu-item:hover,
-.menu-item:focus-visible,
+/* One highlight, a pale tint and no ring: the entry the pointer or the keys moved to last. */
+.menu-item:focus,
 .menu-item.highlighted {
   background: var(--pill);
   outline: none;
 }
 
-/* The item the keys are on: a ring as well as the tint. */
-.menu-item:focus-visible,
-.menu-item.highlighted {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
+/* A dropdown's list: the check on the choice made, and its room on the others. */
+.menu-check {
+  display: grid;
+  flex: none;
+  width: 16px;
+}
+
+.menu-item .menu-check .icon {
+  color: var(--accent);
 }
 
 .menu-item.danger,
