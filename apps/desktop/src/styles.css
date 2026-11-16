@@ -53,6 +53,10 @@
   --danger-soft: #fbeceb;
   --ok: #2c9a5f;
   --warn: #c08417;
+  /* The tooltip: dark on a light window, light on a dark one. */
+  --tip-bg: #1d2023;
+  --tip-text: #ffffff;
+  --tip-key: #3a3f44;
 
   --shadow-sm: 0 1px 2px rgb(16 26 21 / 0.06);
   --shadow-md: 0 4px 16px rgb(16 26 21 / 0.1), 0 1px 3px rgb(16 26 21 / 0.06);
@@ -105,6 +109,9 @@
     --danger-soft: #3a2422;
     --ok: #4cc283;
     --warn: #e2b04b;
+    --tip-bg: #e8ebe9;
+    --tip-text: #181a19;
+    --tip-key: #c9cfcb;
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 16px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
     --shadow-lg: 0 24px 60px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
@@ -149,6 +156,9 @@
   --danger-soft: #3a2422;
   --ok: #4cc283;
   --warn: #e2b04b;
+  --tip-bg: #e8ebe9;
+  --tip-text: #181a19;
+  --tip-key: #c9cfcb;
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-md: 0 4px 16px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 24px 60px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
@@ -8710,6 +8720,44 @@ button.sender-row:hover:not(:disabled) {
   color: var(--muted);
   font-family: inherit;
   font-size: 12.5px;
+}
+
+/* The app's own tooltip (tooltips.ts): a control's name, and its key in a cap. */
+.tooltip {
+  position: fixed;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(340px, calc(100vw - 16px));
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--tip-bg);
+  color: var(--tip-text);
+  box-shadow: var(--shadow-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  pointer-events: none;
+  animation: fade 0.08s ease-out;
+}
+
+.tooltip-keys {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+}
+
+.tooltip kbd {
+  min-width: 18px;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--tip-key);
+  color: var(--tip-text);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 17px;
 }
 
 /* ---------- Motion ---------- */

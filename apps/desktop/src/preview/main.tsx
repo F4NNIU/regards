@@ -15,7 +15,9 @@ import { type Theme, applyTheme, savedTheme } from "../theme";
 import { Tour } from "./Tour";
 import "../styles.css";
 import { spoken } from "../i18n";
+import { installTooltips } from "../tooltips";
 
+installTooltips();
 const params = new URLSearchParams(window.location.search);
 const theme = params.get("theme");
 applyTheme(theme === "dark" || theme === "light" ? (theme as Theme) : savedTheme());
@@ -52,7 +54,7 @@ createRoot(tour).render(<Tour />);
 
 // `?do=click:.row-main|key:j|right:.row-main` plays steps after loading, for screenshots and
 // the Tour: wait:ms, click:css, right:css (right-click), text:css=words (click the first match
-// containing the words), see:css=words (scroll it into view), key:Mod+Shift+k (Mod is Ctrl, or Cmd on a Mac; sent to the focused
+// containing the words), see:css=words (scroll it into view), hover:css (the pointer over it), key:Mod+Shift+k (Mod is Ctrl, or Cmd on a Mac; sent to the focused
 // element), type:words (into the focused field), settings:Page (open Settings at that page),
 // call:drop (files dropped on the window), call:link=hold:2 (a regards:// link).
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -98,7 +100,8 @@ async function play(step: string) {
     element.dispatchEvent(
       new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: box.left + 60, clientY: box.top + 20 }),
     );
-  } else if (kind === "key") press(value);
+  } else if (kind === "hover") document.querySelector<HTMLElement>(value)?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  else if (kind === "key") press(value);
   else if (kind === "type") {
     const field = document.activeElement;
     if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {

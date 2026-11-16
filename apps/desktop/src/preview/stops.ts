@@ -13,7 +13,7 @@ export interface Stop {
   params?: Record<string, string | null>;
   /** Settings kept on this computer, as they would be after choosing them. */
   prefs?: Partial<Prefs>;
-  /** Played after loading: wait:ms, click:css, text:css=words, see:css=words, right:css, key:Mod+Shift+k, type:words, settings:Page, call:drop, call:link=hold:2. */
+  /** Played after loading: wait:ms, click:css, text:css=words, see:css=words, right:css, hover:css, key:Mod+Shift+k, type:words, settings:Page, call:drop, call:link=hold:2. */
   steps?: string[];
 }
 
@@ -105,6 +105,7 @@ export const TOUR: Group[] = [
       { id: "thread-draft", label: "A reply being written", note: "An unsent reply shows under its conversation; it opens to go on writing.", steps: openRow("Book club") },
       { id: "thread-window", label: "A conversation in its own window", note: "The message's ⋯ › Open in its own window: the reader alone; replying opens the composer in a window too.", params: { thread: "1" } },
       { id: "find", label: "Find in this message", note: "Ctrl+Shift+F, or the message's ⋯ menu. Enter and Shift+Enter step through the matches.", steps: [...openRow("Garden plot"), "wait:700", "key:Mod+Shift+F", "wait:300", "type:the"] },
+      { id: "tooltip", label: "A tooltip", note: "The pointer resting on a button: its name and its key, in the app's own look.", params: { link: NEWSLETTER }, steps: ["wait:900", "hover:.reader-bar .segmented button", "wait:700"] },
       { id: "sender-card", label: "About the sender", note: "Why it is here, and what to do with this sender's mail.", params: { link: NEWSLETTER }, steps: ["wait:900", "click:.mail-avatar"] },
       { id: "images-always", label: "Images always from this sender", note: "After choosing it once, this sender's images load without asking.", params: { link: NEWSLETTER }, steps: ["wait:900", "text:.images-notice button=Always"] },
       { id: "snooze", label: "Snooze", note: "The s key (b in the Classic set). Its times come from Settings › Scheduling; under them, whether it comes back with an alert.", params: { link: NEWSLETTER }, steps: ["wait:900", "key:s"] },
