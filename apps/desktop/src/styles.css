@@ -64,6 +64,12 @@
 
   --list-w: 420px;
 
+  /* Controls come in two sizes: regular for forms, dialogs and Settings; small for toolbars and cards. */
+  --control: 32px;
+  --control-radius: 7px;
+  --control-small: 26px;
+  --control-small-radius: 6px;
+
   color-scheme: light;
   font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
     Roboto, "Helvetica Neue", sans-serif;
@@ -631,8 +637,6 @@ button:disabled {
 .assistant-fields .settings-select {
   width: 100%;
   max-width: none;
-  height: 36px;
-  border-radius: 9px;
   font-size: 13.5px;
 }
 
@@ -906,10 +910,10 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  height: 34px;
+  height: var(--control);
   padding: 0 14px;
   border: 1px solid var(--border-strong);
-  border-radius: 9px;
+  border-radius: var(--control-radius);
   background: var(--bg-elev);
   color: var(--text);
   font-weight: 500;
@@ -926,9 +930,9 @@ kbd {
 }
 
 .btn.small {
-  height: 28px;
+  height: var(--control-small);
   padding: 0 10px;
-  border-radius: 7px;
+  border-radius: var(--control-small-radius);
   font-size: 12.5px;
 }
 
@@ -1056,10 +1060,10 @@ button.danger {
 
 .input {
   width: 100%;
-  height: 36px;
+  height: var(--control);
   padding: 0 11px;
   border: 1px solid var(--border-strong);
-  border-radius: 9px;
+  border-radius: var(--control-radius);
   background: var(--bg);
   color: var(--text);
 }
@@ -2079,10 +2083,10 @@ button.list-title:hover {
 .search-scope {
   flex: none;
   max-width: 46%;
-  height: 26px;
+  height: var(--control-small);
   padding: 0 4px 0 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--control-small-radius);
   background: var(--chip);
   color: var(--text-2);
   font-size: 12px;
@@ -5114,11 +5118,11 @@ button.list-title:hover {
 
 .sender-section {
   justify-self: start;
-  height: 24px;
+  height: var(--control-small);
   margin-top: 2px;
   padding: 0 6px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--control-small-radius);
   background: var(--chip);
   color: var(--text-2);
   font-size: 12px;
@@ -5992,10 +5996,10 @@ button.sender-row:hover:not(:disabled) {
   flex: none;
   align-items: center;
   gap: 1px;
-  height: 32px;
+  height: var(--control);
   padding: 0 8px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: var(--bg);
   color: var(--text);
   font-size: 13px;
@@ -6401,10 +6405,10 @@ button.sender-row:hover:not(:disabled) {
 
 .agent-level {
   flex: none;
-  height: 32px;
+  height: var(--control);
   padding: 0 6px 0 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: var(--bg);
   color: var(--text);
   font-size: 13px;
@@ -7787,7 +7791,17 @@ button.sender-row:hover:not(:disabled) {
 
 .secret-field .icon-btn {
   position: absolute;
+  right: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.secret-field .input.big + .icon-btn {
   right: 5px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
 }
 
 .signup-steps {
@@ -8228,10 +8242,10 @@ button.sender-row:hover:not(:disabled) {
 
 .settings-select {
   max-width: 260px;
-  height: 32px;
+  height: var(--control);
   padding: 0 8px 0 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: var(--bg);
   color: var(--text);
   font-size: 13px;
@@ -8737,11 +8751,11 @@ button.sender-row:hover:not(:disabled) {
 .menu-filter {
   flex: none;
   width: 100%;
-  height: 32px;
+  height: var(--control);
   margin-bottom: 4px;
   padding: 0 10px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   background: var(--bg);
   color: var(--text);
 }
