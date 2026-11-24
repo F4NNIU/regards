@@ -19,6 +19,21 @@ ignore = [
     { id = "RUSTSEC-2026-0370", reason = "zvariant merged into zbus 6; Linux-only via tauri-plugin-single-instance and the Secret Service keyring store -> zbus 5" },
     { id = "RUSTSEC-2026-0371", reason = "zbus_names merged into zbus 6; Linux-only via tauri-plugin-single-instance and the Secret Service keyring store -> zbus 5" },
     { id = "RUSTSEC-2026-0372", reason = "zvariant_derive merged into zbus 6; Linux-only via tauri-plugin-single-instance and the Secret Service keyring store -> zbus 5" },
+    # chrono is unmaintained (not a vulnerability). imap-types and imap-codec need
+    # it, in their latest releases too (2.0.0-alpha.8 / alpha.10), and our one use
+    # (a SEARCH date, regards-imap) is to hand them its type. Remove this entry
+    # when they move to another date library.
+    { id = "RUSTSEC-2026-0543", reason = "unmaintained, no vulnerability; required by imap-types and imap-codec, which have no release without it" },
+    # The two below have a fix, but one younger than our two-week rule for new
+    # versions; the owner chose on 2026-11-24 to wait, as Regards is not exposed.
+    # url: only `Url::origin()` overflows, on nested `blob:` URLs; neither Regards
+    # nor Tauri or wry calls it. From 2026-12-04: `cargo update -p url` (>= 2.5.9)
+    # and remove this entry.
+    { id = "RUSTSEC-2026-0592", reason = "Url::origin() is not called; fix url 2.5.9 is from 2026-11-20, take it from 2026-12-04" },
+    # cookie: only programs that fork and then write private cookies; Regards
+    # neither forks nor uses private cookies (cookie comes with Tauri and wry).
+    # From 2026-12-07: `cargo update -p cookie` (>= 0.18.3) and remove this entry.
+    { id = "RUSTSEC-2026-0594", reason = "no fork, no private cookies; fix cookie 0.18.3 is from 2026-11-23, take it from 2026-12-07" },
 ]
 
 [licenses]
