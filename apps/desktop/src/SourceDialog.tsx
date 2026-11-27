@@ -10,7 +10,7 @@ import { t } from "./i18n";
  * "See the original message": the message as it came, headers and all, as
  * plain text. Never shown as HTML: it is the raw message, whatever is in it.
  */
-export function SourceDialog({ messageId, subject, onClose }: { messageId: number; subject: string; onClose: () => void }) {
+export function SourceDialog({ messageId, subject, mailboxId, threadSize, onClose }: { messageId: number; subject: string; mailboxId: number; threadSize: number; onClose: () => void }) {
   const box = useRef<HTMLElement>(null);
   useDialogFocus(box);
   useShortcuts({ Escape: onClose }, { modal: true });
@@ -52,6 +52,7 @@ export function SourceDialog({ messageId, subject, onClose }: { messageId: numbe
           </span>
         </header>
         <p className="muted small source-subject">{subject}</p>
+        <p className="muted small">row #{messageId}, mailbox #{mailboxId}, thread size #{threadSize}</p>
         {error && (
           <p className="error" role="alert">
             {error}
