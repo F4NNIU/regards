@@ -8,8 +8,10 @@
 //! WebView, which allows scripts but no same-origin access, forms, popups or
 //! navigation.
 //!
-//! URLs look like `regards-mail://localhost/message/123?remote=0` (on Windows
-//! the WebView uses `http://regards-mail.localhost/…`).
+//! URLs look like `regards-mail://localhost/message/123?remote=0`. On Windows
+//! the WebView knows no schemes of ours, so the page is really at
+//! `http://regards-mail.localhost/…`; requests still reach us in the first
+//! form, and [`page_origin`] turns it back for the links we write.
 //!
 //! The frame cannot leave the app, so the daemon points web links back here:
 //! `/open?t=<token>&url=<URL>`, opened in a hidden frame inside the message
@@ -137,7 +139,24 @@ fn open_target(query: &str, token: &str) -> Option<Url> {
 /// This host as the page served for `request` sees it; it differs by platform.
 fn origin(request: &Request<Vec<u8>>) -> Option<String> {
     let uri = request.uri();
-    Some(format!("{}://{}", uri.scheme_str()?, uri.authority()?.as_str()))
+    Some(page_origin(
+        uri.scheme_str()?,
+        uri.authority()?.as_str(),
+        cfg!(any(windows, target_os = "android")),
+    ))
+}
+
+/// Where the WebView has the page whose request names `scheme` and `host`.
+/// With `standard_only` (WebView2, Android) it loads our scheme only as
+/// `http://<scheme>.<host>`, and the request we are handed has that undone:
+/// a link written with `<scheme>://<host>` would go nowhere, the frame's
+/// sandbox stopping it as a link to another program.
+fn page_origin(scheme: &str, host: &str, standard_only: bool) -> String {
+    if standard_only && scheme == SCHEME {
+        format!("http://{scheme}.{host}")
+    } else {
+        format!("{scheme}://{host}")
+    }
 }
 
 /// Compare in constant time.
@@ -355,13 +374,28 @@ mod tests {
 
     #[test]
     fn links_point_back_at_the_host_they_were_served_from() {
+        // Where the WebView loads our scheme as it is.
         assert_eq!(
-            origin(&request("regards-mail://localhost/message/42")).as_deref(),
-            Some("regards-mail://localhost")
+            page_origin("regards-mail", "localhost", false),
+            "regards-mail://localhost"
+        );
+        // Windows: the request says `regards-mail://localhost`, the page is elsewhere.
+        assert_eq!(
+            page_origin("regards-mail", "localhost", true),
+            "http://regards-mail.localhost"
         );
         assert_eq!(
-            origin(&request("http://regards-mail.localhost/message/42")).as_deref(),
-            Some("http://regards-mail.localhost")
+            page_origin("http", "regards-mail.localhost", true),
+            "http://regards-mail.localhost"
+        );
+        let expected = if cfg!(any(windows, target_os = "android")) {
+            "http://regards-mail.localhost"
+        } else {
+            "regards-mail://localhost"
+        };
+        assert_eq!(
+            origin(&request("regards-mail://localhost/message/42")).as_deref(),
+            Some(expected)
         );
     }
 
