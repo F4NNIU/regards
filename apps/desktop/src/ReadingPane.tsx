@@ -649,7 +649,7 @@ function ThreadMessage({
       </div>
       {details && ready && <Details detail={ready} id={`mail-details-${message.id}`} />}
       {source && (
-        <SourceDialog messageId={message.id} subject={message.subject || "(no subject)"} onClose={() => setSource(false)} />
+        <SourceDialog messageId={message.id} subject={message.subject || "(no subject)"} mailboxId={message.mailbox_id ?? 0} threadSize={message.thread_size ?? 0} onClose={() => setSource(false)} />
       )}
       <div className="mail-body">
         {load.state === "loading" && <p className="muted">{t("Opening…")}</p>}
