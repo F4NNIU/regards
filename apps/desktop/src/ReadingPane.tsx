@@ -78,7 +78,7 @@ function recipients(people: Person[]): string {
 
 /**
  * The open message and the rest of its conversation, oldest first, as cards.
- * The open one is expanded; the others are one line each until clicked.
+ * Any card folds to one line from its sender name; the open one starts expanded.
  */
 export function ReadingPane({
   item,
@@ -348,7 +348,7 @@ export function ReadingPane({
                   detail={current ? load : null}
                   expanded={expanded.has(entry.message.id)}
                   otherFolder={entry.mailbox_id !== mailboxId}
-                  onToggle={entries.length > 1 ? () => toggle(entry.message.id) : null}
+                  onToggle={() => toggle(entry.message.id)}
                   actionsFor={actionsFor}
                   onPalette={onPalette}
                   onSender={onSender}
@@ -409,8 +409,8 @@ function ThreadMessage({
   expanded: boolean;
   /** In another folder than the open message (a reply in Sent, say). */
   otherFolder: boolean;
-  /** Expand or collapse; null when it is the only message. */
-  onToggle: (() => void) | null;
+  /** Expand or collapse this card, from its sender name. */
+  onToggle: () => void;
   actionsFor: (target: Target) => Action[];
   onPalette: Palette;
   onSender?: SenderOpener;
@@ -511,7 +511,7 @@ function ThreadMessage({
   if (!expanded) {
     return (
       <li className="mail-card collapsed" ref={ref}>
-        <button type="button" className="mail-line" aria-expanded={false} onClick={onToggle ?? undefined}>
+        <button type="button" className="mail-line" aria-expanded={false} onClick={onToggle}>
           <Avatar person={message.from} size="sm" />
           <span className={message.seen ? "who" : "who unread"}>{personName(message.from)}</span>
           {/* The start of its text: what the folded message says, without opening it. */}
@@ -618,8 +618,8 @@ function ThreadMessage({
         <button
           type="button"
           className="mail-who"
-          aria-expanded={onToggle ? true : details}
-          onClick={onToggle ?? (() => setDetails(!details))}
+          aria-expanded={true}
+          onClick={onToggle}
           title={message.from?.address ?? undefined}
         >
           <strong>{personName(message.from)}</strong>
@@ -629,12 +629,25 @@ function ThreadMessage({
             </span>
           )}
         </button>
+        {ready && (
+          <button
+            type="button"
+            className="icon-btn small details-toggle"
+            aria-expanded={details}
+            aria-controls={`mail-details-${message.id}`}
+            title={details ? t("Hide details") : t("Show details")}
+            aria-label={details ? t("Hide details") : t("Show details")}
+            onClick={() => setDetails(!details)}
+          >
+            <Icon name="chevronDown" size={12} />
+          </button>
+        )}
         <time className="when">{when}</time>
         <button type="button" className="icon-btn small" title={withKey(t("More"), "commands")} aria-label={t("More")} aria-haspopup="dialog" onClick={more}>
           <Icon name="more" size={15} />
         </button>
       </div>
-      {details && ready && <Details detail={ready} />}
+      {details && ready && <Details detail={ready} id={`mail-details-${message.id}`} />}
       {source && (
         <SourceDialog messageId={message.id} subject={message.subject || "(no subject)"} onClose={() => setSource(false)} />
       )}
@@ -758,7 +771,7 @@ function TextBody({
   );
 }
 
-function Details({ detail }: { detail: MessageDetail }) {
+function Details({ detail, id }: { detail: MessageDetail; id: string }) {
   const row = (label: string, people: Person[]) =>
     people.length > 0 && (
       <>
@@ -768,7 +781,7 @@ function Details({ detail }: { detail: MessageDetail }) {
     );
   const { message } = detail;
   return (
-    <dl className="mail-details">
+    <dl className="mail-details" id={id}>
       {row(t("From"), message.from ? [message.from] : [])}
       {row(t("To"), detail.to)}
       {row(t("Cc"), detail.cc)}

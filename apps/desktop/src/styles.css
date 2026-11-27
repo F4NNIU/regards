@@ -3355,6 +3355,19 @@ button.list-title:hover {
   color: var(--muted);
 }
 
+/* The details chevron sits between the recipients and the date, not at the edge. */
+.mail-head .details-toggle {
+  margin-right: 0;
+}
+
+.details-toggle .icon {
+  transition: transform 0.12s ease-out;
+}
+
+.details-toggle[aria-expanded="true"] .icon {
+  transform: rotate(180deg);
+}
+
 /* Sender in bold, then "to" and the recipients in the accent colour, on one line. */
 .mail-who {
   display: flex;
