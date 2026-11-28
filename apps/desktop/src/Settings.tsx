@@ -22,7 +22,7 @@ import { type Screening, setScreening } from "./smart";
 import { TemplatesEditor } from "./TemplatesEditor";
 import type { AccountMail, MailState, ServiceCheck } from "./mail";
 import { KEYED_ACTIONS, keysFor } from "./actions";
-import { COMMANDS, MOD_KEY, commandHint, commandKeys, keyText, pressedNames, refusedKey, shortcutList, useShortcuts } from "./shortcuts";
+import { COMMANDS, MOD_KEY, commandHint, commandKeys, composing, compositionEnd, keyText, pressedNames, refusedKey, shortcutList, useShortcuts } from "./shortcuts";
 import { ACCOUNT_COLOURS, COLOUR_NAMES, type KeySet, type Prefs, accountColour, accountLabel, setPrefs, usePrefs } from "./prefs";
 import { Choice, LinkRow, Option, Select, Toggle } from "./SettingsControls";
 import {
@@ -429,7 +429,9 @@ function AccountName({ account }: { account: AccountSummary }) {
           setState("idle");
         }}
         onBlur={save}
+        onCompositionEnd={compositionEnd}
         onKeyDown={(event) => {
+          if (composing(event.nativeEvent)) return;
           if (event.key === "Enter") event.currentTarget.blur();
         }}
       />

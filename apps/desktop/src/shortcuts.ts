@@ -54,7 +54,7 @@ export function useShortcuts(shortcuts: Shortcuts, options: { modal?: boolean } 
 const PAGE_KEYS = ["Mod+r", "Mod+p", "Mod+n"];
 
 function onKeyDown(event: KeyboardEvent) {
-  if (event.defaultPrevented || event.isComposing) return;
+  if (event.defaultPrevented || composing(event)) return;
   const pressed = pressedNames(event);
   // A key set may give them something that cannot act just now, as Reply with no message open.
   if (pressed.some((name) => PAGE_KEYS.includes(name))) event.preventDefault();
@@ -158,6 +158,28 @@ function typing(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
+
+// A composition was committed just now: WebKit sends the committing keydown
+// after compositionend, when isComposing is already false. Cleared in a
+// timeout, after that keydown. One composition at a time, so one flag.
+let justCommitted = false;
+
+/**
+ * A key an input method is working on: a composition's own keydowns
+ * (isComposing, or the older 229 mark), and, on WebKit, the keydown that
+ * commits it — compositionend fires before it there, so the flag above is
+ * what catches it. From a React event, pass its `nativeEvent`: React's
+ * copy leaves the composition state out.
+ */
+export const composing = (event: KeyboardEvent) => event.isComposing || event.keyCode === 229 || justCommitted;
+
+/** On the input: remember a commitment for the keydown that follows it (see composing). */
+export const compositionEnd = () => {
+  justCommitted = true;
+  setTimeout(() => {
+    justCommitted = false;
+  });
+};
 
 export type CommandId =
   | "next"

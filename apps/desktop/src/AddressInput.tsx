@@ -14,6 +14,7 @@ import { forgetPerson, formatRecipients, invalidAddresses, parseRecipients, sugg
 import { Icon } from "./icons";
 import { usePrefs } from "./prefs";
 import { fieldText, isAddress, marked, pastedList, splitTyped, typingStart, withAdded } from "./recipients";
+import { composing, compositionEnd } from "./shortcuts";
 import { t } from "./i18n";
 
 /**
@@ -151,6 +152,8 @@ export function AddressInput({
   };
 
   const keys = (event: KeyboardEvent<HTMLInputElement>) => {
+    // A key an input method is working on: its Enter commits the name being typed, it picks nothing.
+    if (composing(event.nativeEvent)) return;
     const tab = event.key === "Tab" && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey;
     if (shown) {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -297,6 +300,7 @@ export function AddressInput({
         autoComplete="off"
         spellCheck={false}
         onChange={(event) => typing(event.target.value)}
+        onCompositionEnd={compositionEnd}
         onKeyDown={keys}
         onPaste={paste}
         onBlur={() => {

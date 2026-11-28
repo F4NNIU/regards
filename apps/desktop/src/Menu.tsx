@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useLayoutEffect, useRef, useState, useId } from "react";
 import { Icon, type IconName } from "./icons";
-import { MOD_KEY, keyText, useShortcuts } from "./shortcuts";
+import { MOD_KEY, composing, compositionEnd, keyText, useShortcuts } from "./shortcuts";
 import { t } from "./i18n";
 
 export interface MenuItem {
@@ -156,6 +156,8 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
   };
 
   const keys = (event: KeyboardEvent) => {
+    // A key an input method is working on: a composition's keydowns, or the one that commits it (see composing in shortcuts.ts).
+    if (composing(event.nativeEvent)) return;
     const inField = event.target instanceof HTMLInputElement;
     if ((event.key === "ArrowDown" || event.key === "ArrowUp") && inField) {
       event.preventDefault();
@@ -218,6 +220,7 @@ export function Menu({ request, onClose }: { request: MenuRequest; onClose: () =
             aria-autocomplete="list"
             aria-controls={listId}
             aria-activedescendant={highlighted ? `${listId}-${items.indexOf(highlighted)}` : undefined}
+            onCompositionEnd={compositionEnd}
             onChange={(event) => {
               setQuery(event.target.value);
               setActive(0);

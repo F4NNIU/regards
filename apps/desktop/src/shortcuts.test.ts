@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { zoomStep } from "./prefs";
-import { characterKey, placeName } from "./shortcuts";
+import { characterKey, composing, compositionEnd, placeName } from "./shortcuts";
 
 describe("single-key shortcuts", () => {
   it("are one character, shifted or not", () => {
@@ -37,6 +37,24 @@ describe("digit keys by their place", () => {
     expect(placeName(press("Digit1"))).toBe(null);
     expect(placeName(press("KeyA", { shiftKey: true }))).toBe(null);
     expect(placeName(press("Digit1", { altKey: true }))).toBe(null);
+  });
+});
+
+describe("keys of an input method", () => {
+  const press = (isComposing: boolean, keyCode: number) => ({ isComposing, keyCode }) as KeyboardEvent;
+
+  it("are a composition's keydowns, by isComposing or the older 229", () => {
+    expect(composing(press(true, 229))).toBe(true);
+    expect(composing(press(true, 13))).toBe(true);
+    expect(composing(press(false, 229))).toBe(true);
+    expect(composing(press(false, 13))).toBe(false);
+  });
+
+  it("on WebKit, also the keydown that commits the composition, until the timeout clears it", async () => {
+    compositionEnd();
+    expect(composing(press(false, 13))).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(composing(press(false, 13))).toBe(false);
   });
 });
 

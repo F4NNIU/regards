@@ -29,7 +29,7 @@ import { AppMark } from "./AppMark";
 import { useDialogFocus } from "./dialogFocus";
 import { Icon } from "./icons";
 import { OauthWaiting, PROVIDERS, useOauth } from "./OauthSignIn";
-import { useShortcuts } from "./shortcuts";
+import { composing, compositionEnd, useShortcuts } from "./shortcuts";
 import { t } from "./i18n";
 import { PortInput, SecretInput } from "./Fields";
 import { Choice as Radios } from "./SettingsControls";
@@ -505,12 +505,13 @@ export function AddAccount({
   const close =
     onClose && step.kind !== "checking" ? (step.kind === "ready" ? () => onDone(step.account) : onClose) : undefined;
   const escape = (event: KeyboardEvent) => {
-    if (event.key !== "Escape" || event.defaultPrevented || !onClose) return;
+    // An input method's Escape cancels its candidates, not the dialog (see composing).
+    if (event.key !== "Escape" || event.defaultPrevented || composing(event.nativeEvent) || !onClose) return;
     event.preventDefault();
     close?.();
   };
   return (
-    <section className="signup-card" aria-label={t("Add an email account")} onKeyDown={escape}>
+    <section className="signup-card" aria-label={t("Add an email account")} onKeyDown={escape} onCompositionEnd={compositionEnd}>
       {step.kind !== "ready" && (
         <div className="signup-top">
           {backable || (step.kind === "address" && onCancel) ? (

@@ -77,12 +77,13 @@ describe("the date and time dialog", () => {
   });
 });
 
-function Clock({ start, onChange }: { start: string; onChange: (value: string) => void }) {
+function Clock({ start, onChange, onEnter }: { start: string; onChange: (value: string) => void; onEnter?: () => void }) {
   const [value, setValue] = useState(start);
   return (
     <TimeInput
       label="Time"
       value={value}
+      onEnter={onEnter}
       onChange={(next) => {
         setValue(next);
         onChange(next);
@@ -112,6 +113,29 @@ describe("a time of day", () => {
     expect(onChange).toHaveBeenLastCalledWith("00:00");
     fireEvent.keyDown(screen.getByLabelText("Minutes"), { key: "ArrowDown" });
     expect(onChange).toHaveBeenLastCalledWith("00:55");
+  });
+
+  it("answers on a plain Enter, but an input method commits its text with its own", async () => {
+    const onEnter = vi.fn();
+    render(<Clock start="09:00" onChange={() => {}} onEnter={onEnter} />);
+    const field = screen.getByLabelText("Hours");
+
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onEnter).toHaveBeenCalledTimes(1);
+
+    // Blink and Firefox say so on a composition's keydowns, and 229 is the older mark of one.
+    fireEvent.keyDown(field, { key: "Enter", isComposing: true, keyCode: 229 });
+    expect(onEnter).toHaveBeenCalledTimes(1);
+
+    // WebKit: compositionend comes before the committing keydown.
+    fireEvent.compositionEnd(field);
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onEnter).toHaveBeenCalledTimes(1);
+
+    // The flag clears in a timeout, and Enter answers again.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onEnter).toHaveBeenCalledTimes(2);
   });
 });
 
