@@ -402,7 +402,7 @@ export const FR: Record<string, Entry> = {
   "Regards {version} is available": "Regards {version} est disponible",
   "Regards asks them to stop sending to you: in one click where they take it, otherwise by an email (which you can undo) or on their own page.": "Regards leur demande d’arrêter de vous écrire : en un clic quand ils l’acceptent, sinon par un e-mail (que vous pouvez annuler) ou sur leur propre page.",
   "Regards can't show this kind of file. Open it with its program, or save it.": "Regards ne peut pas afficher ce type de fichier. Ouvrez-le avec son programme, ou enregistrez-le.",
-  "Regards in English or in French. Like this computer: French on a computer set to French, English otherwise.": "Regards en anglais ou en français. Comme cet ordinateur : en français sur un ordinateur réglé en français, en anglais sinon.",
+  "Regards in English, in French or in Chinese. Like this computer: the language the computer is set to, when Regards speaks it.": "Regards en anglais, en français ou en chinois. Comme cet ordinateur : la langue réglée sur l’ordinateur, quand Regards la parle.",
   "Remind me": "Me le rappeler",
   "Remind me if no reply by": "Me le rappeler sans réponse d’ici",
   "Remind me…": "Me le rappeler…",

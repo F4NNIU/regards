@@ -89,8 +89,8 @@ export interface Prefs {
  * The others: those of another mail app, for people used to it (keysets.ts).
  */
 export type KeySet = "standard" | "classic" | "gmail" | "apple" | "superhuman";
-/** "system": French on a French system, English otherwise. */
-export type Language = "system" | "en" | "fr";
+/** "system": French on a French system, Simplified Chinese on one set to it, English otherwise. */
+export type Language = "system" | "en" | "fr" | "zh-CN";
 
 export type MarkRead = "now" | "2s" | "5s" | "never";
 
