@@ -47,7 +47,7 @@ import { fileKind, fileSize, laterDate } from "./format";
 import { Icon } from "./icons";
 import { type Anchor, anchorOf, Menu, type MenuEntry, type MenuRequest } from "./Menu";
 import { getPrefs } from "./prefs";
-import { type CommandId, commandOf, useShortcuts, withKey } from "./shortcuts";
+import { type CommandId, commandOf, composing, compositionEnd, useShortcuts, withKey } from "./shortcuts";
 import { t } from "./i18n";
 import { Select } from "./SettingsControls";
 
@@ -610,7 +610,7 @@ export function Composer({
   // deletes the draft, and 1–6 go to From, Subject, To, Cc, Bcc and the text.
   const keys = (event: KeyboardEvent) => {
     // The editor sends from its text itself (RichEditor), before its own keys.
-    if (event.defaultPrevented) return;
+    if (event.defaultPrevented || composing(event.nativeEvent)) return;
     const run: Partial<Record<CommandId, () => void>> = {
       send: () => void send(null, false),
       sendDone: () => void send(null, true),
@@ -636,7 +636,12 @@ export function Composer({
   // enclosing block). The link field keeps it, to cancel the link.
   const escape = (event: KeyboardEvent) => {
     // A link being typed, an open list of people, or the From menu takes Escape itself.
-    if (event.key !== "Escape" || (event.target as HTMLElement).closest(".link-input, .address-input.suggesting, .menu-layer"))
+    // An input method's Escape cancels its candidates, not the draft (see composing).
+    if (
+      event.key !== "Escape" ||
+      composing(event.nativeEvent) ||
+      (event.target as HTMLElement).closest(".link-input, .address-input.suggesting, .menu-layer")
+    )
       return;
     event.preventDefault();
     event.stopPropagation();
@@ -752,6 +757,7 @@ export function Composer({
       aria-label={mode === "panel" ? t("Reply") : t("New message")}
       onKeyDown={keys}
       onKeyDownCapture={escape}
+      onCompositionEnd={compositionEnd}
     >
       {dragging && (
         <div className="composer-drop" aria-hidden>

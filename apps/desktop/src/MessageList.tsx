@@ -19,7 +19,7 @@ import { type Anchor, anchorOf } from "./Menu";
 import { accountColour, usePrefs } from "./prefs";
 import type { Opened } from "./recent-opened";
 import { SEARCH_CHIPS, hasTerm, toggleTerm } from "./search";
-import { useShortcuts, withKey } from "./shortcuts";
+import { composing, compositionEnd, useShortcuts, withKey } from "./shortcuts";
 import { DRAG_TYPE, type DragPayload } from "./Sidebar";
 import { t, tn } from "./i18n";
 import { Select } from "./SettingsControls";
@@ -1043,7 +1043,9 @@ function SearchBar({
           aria-label={t("Search mail")}
           spellCheck={false}
           onChange={(event) => onQuery(event.target.value)}
+          onCompositionEnd={compositionEnd}
           onKeyDown={(event) => {
+            if (composing(event.nativeEvent)) return;
             if (event.key === "Escape") {
               event.preventDefault();
               event.stopPropagation();

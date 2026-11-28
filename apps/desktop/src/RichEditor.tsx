@@ -7,7 +7,7 @@ import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { IMAGE_TYPES } from "./images";
-import { commandOf } from "./shortcuts";
+import { commandOf, composing, compositionEnd } from "./shortcuts";
 // ProseMirror's base styles as files: the app's CSP allows no injected <style>.
 import "prosemirror-view/style/prosemirror.css";
 import "prosemirror-gapcursor/style/gapcursor.css";
@@ -403,7 +403,9 @@ export function RichEditor({
               placeholder="https://…"
               aria-label={t("Link address")}
               onChange={(event) => setLinking(event.target.value)}
+              onCompositionEnd={compositionEnd}
               onKeyDown={(event) => {
+                if (composing(event.nativeEvent)) return;
                 if (event.key === "Enter") {
                   event.preventDefault();
                   applyLink();

@@ -32,7 +32,7 @@ import { type NewMail, type NotificationSettings, notificationSettings, setNotif
 import type { ServiceCheck } from "./mail";
 import { ACCOUNT_COLOURS, COLOUR_NAMES, type Prefs, ZOOMS, accountColour, accountLabel, setPrefs, usePrefs } from "./prefs";
 import { t } from "./i18n";
-import { MOD_KEY, commandHint } from "./shortcuts";
+import { MOD_KEY, commandHint, composing, compositionEnd } from "./shortcuts";
 import { LinkRow, Option, Select, SubPageHead, Toggle } from "./SettingsControls";
 import { SignaturesPage } from "./SignaturesPage";
 import { blockSender, blockedSenders, senderImages, setSenderImages } from "./smart";
@@ -1079,7 +1079,9 @@ function AutoCopyRow({ account, label }: { account: AccountSummary; label: strin
               setState("idle");
             }}
             onBlur={() => save(kind, address)}
+            onCompositionEnd={compositionEnd}
             onKeyDown={(event) => {
+              if (composing(event.nativeEvent)) return;
               if (event.key === "Enter") event.currentTarget.blur();
             }}
           />

@@ -2,6 +2,7 @@ import { type RefObject, useEffect, useRef, useState } from "react";
 import { clearFound, findRanges, markFound, reveal } from "./find";
 import { Icon } from "./icons";
 import { t } from "./i18n";
+import { composing, compositionEnd } from "./shortcuts";
 
 /**
  * Find in the open message (its ⋯ menu, or Ctrl+Shift+F): how many matches
@@ -91,7 +92,9 @@ export function FindBar({
         placeholder={t("Find in this message")}
         aria-label={t("Find in this message")}
         onChange={(event) => search(event.target.value)}
+        onCompositionEnd={compositionEnd}
         onKeyDown={(event) => {
+          if (composing(event.nativeEvent)) return;
           if (event.key === "Enter") {
             event.preventDefault();
             step(event.shiftKey ? -1 : 1);

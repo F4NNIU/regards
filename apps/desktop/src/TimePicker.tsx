@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useId, useRef, useState } from "react";
-import { useShortcuts } from "./shortcuts";
+import { composing, compositionEnd, useShortcuts } from "./shortcuts";
 import { useDialogFocus } from "./dialogFocus";
 import { Icon } from "./icons";
 import { appLocale, t } from "./i18n";
@@ -71,7 +71,9 @@ export function TimeInput({
           minutesField.current?.focus();
         }
       },
+      onCompositionEnd: compositionEnd,
       onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+        if (composing(event.nativeEvent)) return;
         if (event.key === "ArrowUp" || event.key === "ArrowDown") {
           event.preventDefault();
           const step = (part === "h" ? 1 : 5) * (event.key === "ArrowUp" ? 1 : -1);

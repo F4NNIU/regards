@@ -7,7 +7,7 @@ import { Icon } from "./icons";
 import { type Note, NOTE_MAX, addNote, listNotes, noteSettings, removeNote, updateNote } from "./notes";
 import type { Anchor } from "./Menu";
 import { searchTerm } from "./search";
-import { useShortcuts } from "./shortcuts";
+import { composing, compositionEnd, useShortcuts } from "./shortcuts";
 import { type Explanation, type Policy, SECTION_LABELS, blockSender, blockableDomain, explain, reasonText, setSender, setSenderQuiet } from "./smart";
 import { useDialogFocus } from "./dialogFocus";
 import { t, tn } from "./i18n";
@@ -379,7 +379,9 @@ function SenderNotes({
                     maxLength={NOTE_MAX}
                     value={editing.text}
                     onChange={(event) => setEditing({ id: note.id, text: event.target.value })}
+                    onCompositionEnd={compositionEnd}
                     onKeyDown={(event) => {
+                      if (composing(event.nativeEvent)) return;
                       if (event.key === "Enter") save();
                       if (event.key === "Escape") {
                         event.stopPropagation();
@@ -454,7 +456,9 @@ function SenderNotes({
           maxLength={NOTE_MAX}
           value={adding}
           onChange={(event) => setAdding(event.target.value)}
+          onCompositionEnd={compositionEnd}
           onKeyDown={(event) => {
+            if (composing(event.nativeEvent)) return;
             if (event.key === "Enter") add();
           }}
         />
