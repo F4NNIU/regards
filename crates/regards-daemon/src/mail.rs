@@ -975,6 +975,19 @@ pub(crate) async fn conversation_ids(state: &State, params: MessageIds) -> Resul
     Ok(json!(ConversationIdsResult { ids: all }))
 }
 
+/// The conversation keeps the message that was opened: when the Message-ID
+/// dedupe kept a twin of it (the same message stored in another folder, or
+/// even twice in one folder), that twin stands in for the row the reader
+/// opened, in the twin's own place in the order.
+fn standing_in(rows: &mut Vec<Message>, message: &Message) {
+    if rows.iter().any(|row| row.id == message.id) {
+        return;
+    }
+    if let Some(at) = rows.iter().position(|row| row.message_id == message.message_id) {
+        rows[at] = message.clone();
+    }
+}
+
 /// A conversation, oldest first; `with_drafts`, the replies being written in
 /// it too (for the Regards app, not agents).
 pub(crate) async fn thread(state: &State, params: MessageRef, with_drafts: bool) -> Result<Value, RpcError> {
@@ -986,7 +999,11 @@ pub(crate) async fn thread(state: &State, params: MessageRef, with_drafts: bool)
                 return Ok(None);
             };
             let rows = match message.thread_id {
-                Some(thread) => messages::in_thread(conn, thread)?,
+                Some(thread) => {
+                    let mut rows = messages::in_thread(conn, thread)?;
+                    standing_in(&mut rows, &message);
+                    rows
+                }
                 None => vec![message],
             };
             let mut folders: HashMap<i64, Option<Mailbox>> = HashMap::new();
@@ -1107,6 +1124,7 @@ pub(crate) fn plain_summary(m: Message) -> MessageSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use regards_store::messages::MessageFlags;
 
     #[test]
     fn a_draft_preview_is_its_own_words_not_the_quote_under_them() {
@@ -1143,5 +1161,44 @@ mod tests {
         let cut = source_view(&big);
         assert!(cut.truncated);
         assert_eq!((cut.text.len(), cut.size), (MessageSource::MAX, big.len() as u64));
+    }
+
+    #[test]
+    fn the_opened_message_stands_in_for_the_twin_the_dedupe_kept() {
+        let message = |id: i64, mid: &str| Message {
+            id,
+            mailbox_id: 1,
+            uid: u32::try_from(id).unwrap(),
+            modseq: None,
+            flags: MessageFlags::default(),
+            received_at: id * 1000,
+            size: None,
+            sent_at: None,
+            subject: String::new(),
+            from: None,
+            to: vec![],
+            cc: vec![],
+            message_id: Some(mid.into()),
+            blob_hash: None,
+            moving_to: None,
+            thread_id: Some(1),
+            section: None,
+            has_attachments: None,
+            preview: None,
+            listed_at: id * 1000,
+        };
+        // As in a Gmail account: the dedupe kept the copy with the lower id
+        // (the sent folder's), not the one in the folder that was read.
+        let mut rows = vec![message(15586, "m@x"), message(11978, "fwd@x")];
+        standing_in(&mut rows, &message(123903, "m@x"));
+        assert_eq!(rows.iter().map(|row| row.id).collect::<Vec<_>>(), [123903, 11978]);
+        // Twice in one folder, the newer delivery opened: it stands in for the earlier one.
+        let mut rows = vec![message(113092, "m@x"), message(11978, "fwd@x")];
+        standing_in(&mut rows, &message(113093, "m@x"));
+        assert_eq!(rows.iter().map(|row| row.id).collect::<Vec<_>>(), [113093, 11978]);
+        // The conversation that already shows the opened message is left alone.
+        let mut rows = vec![message(1, "m@x"), message(2, "re@x")];
+        standing_in(&mut rows, &message(1, "m@x"));
+        assert_eq!(rows.iter().map(|row| row.id).collect::<Vec<_>>(), [1, 2]);
     }
 }
