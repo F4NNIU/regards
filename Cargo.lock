@@ -3940,7 +3940,7 @@ dependencies = [
 
 [[package]]
 name = "regards-cli"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -3959,7 +3959,7 @@ dependencies = [
 
 [[package]]
 name = "regards-core"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "ammonia",
  "dirs 7.0.0",
@@ -3978,7 +3978,7 @@ dependencies = [
 
 [[package]]
 name = "regards-daemon"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "bytes",
  "futures-util",
@@ -4005,7 +4005,7 @@ dependencies = [
 
 [[package]]
 name = "regards-desktop"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "getrandom 0.4.3",
  "open",
@@ -4031,7 +4031,7 @@ dependencies = [
 
 [[package]]
 name = "regards-imap"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "chrono",
  "imap-codec",
@@ -4050,7 +4050,7 @@ dependencies = [
 
 [[package]]
 name = "regards-ipc"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "bytes",
  "futures-util",
@@ -4069,11 +4069,11 @@ dependencies = [
 
 [[package]]
 name = "regards-ispdb"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 
 [[package]]
 name = "regards-net"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "futures-util",
  "rcgen",
@@ -4085,7 +4085,7 @@ dependencies = [
 
 [[package]]
 name = "regards-smtp"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "rcgen",
  "regards-core",
@@ -4097,7 +4097,7 @@ dependencies = [
 
 [[package]]
 name = "regards-store"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "regards-core",
  "rusqlite",
@@ -4114,7 +4114,7 @@ dependencies = [
 
 [[package]]
 name = "regards-vault"
-version = "0.4.0-fork.3"
+version = "0.4.0-fork.4"
 dependencies = [
  "apple-native-keyring-store",
  "keyring-core",
