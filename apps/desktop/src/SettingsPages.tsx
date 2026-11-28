@@ -77,7 +77,7 @@ export function GeneralPage({ accounts }: { accounts: AccountSummary[] }) {
     <>
       <h3>{t("General")}</h3>
       {error && <p className="error" role="alert">{error}</p>}
-      <Option icon="text" label={t("Language")} description={t("Regards in English or in French. Like this computer: French on a computer set to French, English otherwise.")}>
+      <Option icon="text" label={t("Language")} description={t("Regards in English, in French or in Chinese. Like this computer: the language the computer is set to, when Regards speaks it.")}>
         <Select
           label={t("Language")}
           value={prefs.language}
@@ -85,6 +85,7 @@ export function GeneralPage({ accounts }: { accounts: AccountSummary[] }) {
             { id: "system", label: t("Like this computer") },
             { id: "en", label: "English" },
             { id: "fr", label: "Français" },
+            { id: "zh-CN", label: "简体中文" },
           ]}
           onChange={(language) => {
             setPrefs({ language });

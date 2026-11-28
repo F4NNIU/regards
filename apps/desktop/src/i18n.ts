@@ -1,4 +1,5 @@
 import { FR } from "./i18n-fr";
+import { ZH_CN } from "./i18n-zh-CN";
 import { getPrefs } from "./prefs";
 
 /**
@@ -7,20 +8,25 @@ import { getPrefs } from "./prefs";
  * `tn(count, "1 message", "{count} messages")` for a count. A language's
  * table gives each its translation; what it lacks stays in English.
  */
-export type Spoken = "en" | "fr";
+export type Spoken = "en" | "fr" | "zh-CN";
 
 /** A translation: one text, or a count's forms (`one` for 0 and 1 in French). */
 export type Entry = string | { one: string; other: string };
 
-const TABLES: Record<Exclude<Spoken, "en">, Record<string, Entry>> = { fr: FR };
+const TABLES: Record<Exclude<Spoken, "en">, Record<string, Entry>> = { fr: FR, "zh-CN": ZH_CN };
 
-const systemSpeaks = (language: Spoken) => navigator.language.toLowerCase().startsWith(language);
+const systemSpeaks = (language: Spoken) => {
+  const tag = navigator.language.toLowerCase();
+  // Simplified Chinese: zh-CN, zh-SG and anything written in the Hans script.
+  // Traditional (zh-TW, zh-HK, zh-Hant) does not match, and stays English.
+  return language === "zh-CN" ? /^zh-(?:cn|sg|hans)/.test(tag) : tag.startsWith(language);
+};
 
-/** The language the app speaks: the one chosen, or the system's when it is French. */
+/** The language the app speaks: the one chosen, or the system's when it is French or Chinese. */
 export function spoken(): Spoken {
   const chosen = getPrefs().language;
-  if (chosen === "en" || chosen === "fr") return chosen;
-  return systemSpeaks("fr") ? "fr" : "en";
+  if (chosen !== "system") return chosen;
+  return systemSpeaks("fr") ? "fr" : systemSpeaks("zh-CN") ? "zh-CN" : "en";
 }
 
 /** For dates and numbers: the system's own locale when it speaks the app's language (fr-CH, say), or the language. */
